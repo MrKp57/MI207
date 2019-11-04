@@ -5,9 +5,9 @@
 
 #include <sys/stat.h>
 
-#define PIPE_PATH "/tmp/pipe0"
+#define PIPE_PATH "/tmp/chat/0"
 
-#define DEBUG 1
+#define DEBUG 0
 
 void exit_if(int condition, const char *prefix){
     if (condition){
@@ -17,23 +17,30 @@ void exit_if(int condition, const char *prefix){
 }
 
 int main(int argc, char **argv){   
-    printf("----- Start client -----\n"); 
-    //exit_if(mkfifo(PIPE_PATH, 0666)==-1,"mkfifo"); // Create fifo file
+    printf("----- Start client:%d -----\n",getpid());
+    
     #if DEBUG
         printf("DEBUG : fifo file created\n"); 
     #endif
 
+    if (access(PIPE_PATH, F_OK)){
+        printf("Please launch server first !\n"); 
+        printf("----- Stop client -----\n");
+        exit(0);
+    }
     int fd = open(PIPE_PATH, O_WRONLY);
-    exit_if(fd == -1, PIPE_PATH); // Open fifo file in read only
+    exit_if(fd == -1, "Pipe open"); // Open fifo file in read only
     #if DEBUG
         printf("DEBUG : fifo file opened\n");    
     #endif
 
     printf("file %s is open for write\n", PIPE_PATH);
     char buffer[100];
-    int n = snprintf(buffer, sizeof(buffer),"I'm %d", getpid());
+    int n = snprintf(buffer, sizeof(buffer),"%d,6,coucou", getpid());
     write(fd, buffer, n);
-    printf("end of write\n");
+    printf("%d bytes sent : \"%s\"\n",n,buffer);
+    
+    printf("----- Stop client -----\n");
 
     return 0;
 }

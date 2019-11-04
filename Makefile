@@ -10,18 +10,18 @@ CLT_OBJ	= $(OBJDIR)/client.o
 CLT_SRC	= $(SRCDIR)/client.c
 CLT_OUT = $(BINDIR)/client
 
-OBJS	= $(CLT_OBJ),$(SRV_OBJ)
-OUT		= $(CLT_OUT),$(SRV_OUT)
+OBJS	= $(CLT_OBJ) $(SRV_OBJ)
+OUT		= $(CLT_OUT) $(SRV_OUT)
 
 CC		= gcc
 FLAGS	= -g -c -Wall
 
-all: client server
+all: $(SRV_OUT) $(CLT_OUT)
 
-client: $(CLT_OBJ) $(LFLAGS)
+$(CLT_OUT): $(CLT_OBJ) $(LFLAGS)
 	$(CC) -g $(CLT_OBJ) -o $(CLT_OUT)
 
-server: $(SRV_OBJ) $(LFLAGS)
+$(SRV_OUT): $(SRV_OBJ) $(LFLAGS)
 	$(CC) -g $(SRV_OBJ) -o $(SRV_OUT)
 
 $(CLT_OBJ): $(CLT_SRC)
