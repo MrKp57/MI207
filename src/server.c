@@ -9,7 +9,7 @@
 
 #define PIPE_PATH "/tmp/chat/0"
 
-//#define DEBUG
+#define DEBUG
 
 static const char *signames[] = {
     "SIGHUP",  "SIGINT",    "SIGQUIT", "SIGILL",   "SIGTRAP", "SIGABRT", "SIGEMT",  "SIGFPE",
@@ -70,45 +70,62 @@ int main(int argc, char **argv){
             #ifdef DEBUG
                 printf("DEBUG : Received %d bytes : \"%s\"\n",n , buffer);
             #endif
-            int i;
+            int i=0;
 
             //// Pid calculation
             char rmt_pid_c[10];
-            for(i=0;i<n && buffer[i]!=',';i++){
+            int last_i = i;
+            for(i=0;i<n && buffer[i]!=',';i-=-1){
                 rmt_pid_c[i]=buffer[i];
+                #ifdef DEBUG
+                    printf("DEBUG : buffer[%d]:\"%c\" ",i,buffer[i]);
+                    printf("rmt_pid_c[%d]:\"%c\"\n",i-last_i,rmt_pid_c[i]);
+                #endif
                 rmt_pid_c[i+1]=NULL;
             }
             int rmt_pid = atoi(rmt_pid_c);
             
             #ifdef DEBUG
-                printf("DEBUG : pid c : %s, pid : %d\n",rmt_pid_c, rmt_pid);
+                printf("DEBUG : pid c : \"%s\", pid : %d\n",rmt_pid_c, rmt_pid);
             #endif
 
             //// Len calculation
-            char data_len_c[10];
 
-            int last_i = ++i;
-            do{
-                data_len_c[i-last_i]=buffer[i];
+            #ifdef DEBUG
+                printf("DEBUG : buffer[%d] = \"%c\"\n",i, buffer[i]);
+            #endif
+
+            i++;
+
+            #ifdef DEBUG
+                printf("DEBUG : buffer[%d] = \"%c\"\n",i, buffer[i]);
+                printf("DEBUG : int(buffer[%d]) = \"%d\"\n",i, (int)buffer[i]);
+            #endif
+            
+            last_i = i;
+
+            if(!(buffer[i] == 48)){
+                char data_len_c[10];
+                do{
+                    data_len_c[i-last_i]=buffer[i];
+                    #ifdef DEBUG
+                        printf("DEBUG : buffer[%d]:%c ",i,buffer[i]);
+                        printf("data_len_c[%d]:%c\n",i-last_i,data_len_c[i-last_i]);
+                    #endif
+                    data_len_c[++i-last_i+1]=NULL;
+                }while(buffer[i]!=',');
+                
                 #ifdef DEBUG
-                    printf("DEBUG : buffer[%d]:%c\n",i,buffer[i]);
-                    printf("DEBUG : data_len_c[%d]:%c\n",i-last_i,data_len_c[i-last_i]);
+                    printf("DEBUG : data_len_c[%d]:%c\n",0,data_len_c[0]);
                 #endif
-                data_len_c[++i-last_i+1]=0;
-            }while(buffer[i]!=',');
-            
-            #ifdef DEBUG
-                printf("DEBUG : data_len_c[%d]:%c\n",0,data_len_c[0]);
-            #endif
-            
-            int data_len = atoi(data_len_c);
-            
-            #ifdef DEBUG
-                printf("DEBUG : len c : %s, len : %d\n",data_len_c, data_len);
-            #endif
-            
-            //// data calculation
-            if(data_len){
+                
+                int data_len = atoi(data_len_c);
+                
+                #ifdef DEBUG
+                    printf("DEBUG : len c : %s, len : %d\n",data_len_c, data_len);
+                #endif
+                
+                //// data calculation
                 char data_c[100];
 
                 int last_i = ++i;
@@ -116,18 +133,16 @@ int main(int argc, char **argv){
                 do{
                     data_c[i-last_i]=buffer[i];
                     #ifdef DEBUG
-                        printf("DEBUG : buffer[%d]:%c\n",i,buffer[i]);
-                        printf("DEBUG : data_c[%d]:%c\n",i-last_i,data_c[i-last_i]);
+                        printf("DEBUG : buffer[%d]:%c",i,buffer[i]);
+                        printf("data_c[%d]:%c\n",i-last_i,data_c[i-last_i]);
                     #endif
-                    data_c[++i-last_i+1]=0;
+                    data_c[++i-last_i+1]=NULL;
                 }while(i != last_i+data_len);
 
-
-                printf("// Data received ! \\\\\n  from pid = %d\n  data_len = %d\n  data = \"%s\"\n\\\\ End of data //\n",rmt_pid, data_len,data_c);
+                printf("// Data received ! \\\\\n   From pid = %d\n   Data_len = %d\n   Data = \"%s\"\n\\\\ End of data //\n",rmt_pid, data_len,data_c);
             }
-            else printf("Welcome %d\n",rmt_pid);
+            else printf("Welcome to %d\n",rmt_pid);
         }
     }
-    
     return 0;
 }
