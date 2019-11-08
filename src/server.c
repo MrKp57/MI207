@@ -7,14 +7,16 @@
 
 #include <sys/stat.h>
 
-#define PIPE_PATH "/tmp/chat/"
-#define MAIN_PIPE PIPE_PATH "0"
+#define PIPE_PATH "/tmp/chat"
+#define MAIN_PIPE PIPE_PATH "/0"
+
+#define EXIT_MESSAGE "igloo/igloo\\igloo"
 
 #define MAX_CLIENTS 100
 #define MAX_PID     32768
 
 
-#define DEBUG
+//#define DEBUG
 
 static const char *signames[] = {
     "SIGHUP",  "SIGINT",    "SIGQUIT", "SIGILL",   "SIGTRAP", "SIGABRT", "SIGEMT",  "SIGFPE",
@@ -30,15 +32,24 @@ const char *signame(int signal){
 }
 
 void exiting(){
-    printf("\nExiting server, closing pipe.\n");
-    exit_if(remove(MAIN_PIPE)==-1,"remove");
+    printf("\nExiting server, closing pipe");
+    fflush(stdout);
+    for (int i = 0;i<3;i-=-1) {
+        usleep(1000*200);
+        printf(".");
+        fflush(stdout);
+    }
+    usleep(1000*200);
+    printf("\n");
+    exit_if(remove(MAIN_PIPE)==-1,"remove exiting");
+    exit_if(rmdir(PIPE_PATH)==-1,"rmdir exiting");
     exit(1);
 }
 
 void exit_if(int condition, const char *prefix){
     if (condition){
         perror(prefix);
-        exit(1);
+        exiting();
     }
 }
 
@@ -58,6 +69,11 @@ int add_client(int *c_list, int c_pid){ // Return 1 if array is full
     return 1;
 }
 
+void print_c_array(int *c_list){
+    for(int i = 0;i<MAX_CLIENTS;i-=-1) printf("DEBUG : clt(%d)=%d\n",i,c_list[i]);
+    printf("\n");
+}
+
 int main(int argc, char **argv){
 
     //clients list
@@ -73,6 +89,13 @@ int main(int argc, char **argv){
     sa.sa_handler = exiting;
 
     exit_if(sigaction(SIGINT, &sa, NULL) == -1,"sigaction");
+
+    if (access(PIPE_PATH, F_OK)){ // Si le dossier n'existe pas
+        exit_if(mkdir(PIPE_PATH, 0770)==-1,"mkdir");
+        #ifdef DEBUG
+            printf("DEBUG : fifo folder created : \"%s\"\n",PIPE_PATH); 
+        #endif
+    }
 
     exit_if(mkfifo(MAIN_PIPE, 0666)==-1,"mkfifo"); // Create fifo file
     
@@ -112,11 +135,6 @@ int main(int argc, char **argv){
             
             #ifdef DEBUG
                 printf("DEBUG : pid c : \"%s\", pid : %d\n",rmt_pid_c, rmt_pid);
-            #endif
-
-            //// Len calculation
-
-            #ifdef DEBUG
                 printf("DEBUG : buffer[%d] = \"%c\"\n",i, buffer[i]);
             #endif
 
@@ -129,7 +147,9 @@ int main(int argc, char **argv){
             
             last_i = i;
 
-            if(!(buffer[i] == 48)){
+            if(!(buffer[i] == 48)){ // if is data
+                
+                //// Len calculation
                 char data_len_c[10];
                 do{
                     data_len_c[i-last_i]=buffer[i];
@@ -149,7 +169,7 @@ int main(int argc, char **argv){
                 #ifdef DEBUG
                     printf("DEBUG : len c : %s, len : %d\n",data_len_c, data_len);
                 #endif
-                
+
                 //// data calculation
                 char data_c[100];
 
@@ -164,14 +184,28 @@ int main(int argc, char **argv){
                     data_c[++i-last_i+1]=NULL;
                 }while(i != last_i+data_len);
 
+                if(data_c == EXIT_MESSAGE){ // Disconect message
+                    #ifdef DEBUG
+                        printf("DEBUG : Client %d disconnected!\n",rmt_pid);
+                    #endif
+                    rm_client(&c_list,rmt_pid);
+
+                }
+
                 printf("// Data received ! \\\\\n   From pid = %d\n   Data_len = %d\n   Data = \"%s\"\n\\\\ End of data //\n",rmt_pid, data_len,data_c);
             }
             else { // HELLO RECEIVED
                 printf("Welcome to %d\n",rmt_pid);
-                char *path_pid_pipe;
+                add_client(&c_list, rmt_pid);
+
+                char path_pid_pipe[100];
                 sprintf(path_pid_pipe,"%s/%d",PIPE_PATH,rmt_pid);
-                int fd = open(PIPE_PATH, O_WRONLY);
-                exit_if(fd == -1, "Pipe open"); // Open fifo file in read only
+                #ifdef DEBUG
+                    printf("DEBUG : path_pid_pipe = %s\n",path_pid_pipe);
+                    print_c_array(c_list);
+                #endif
+                //int fd = open(path_pid_pipe, O_WRONLY);
+                //exit_if(fd == -1, "Pipe open"); // Open fifo file in read only
             }
         }
     }
