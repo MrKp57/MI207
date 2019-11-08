@@ -47,7 +47,7 @@ int main(int argc, char **argv){
 
     send_hello(fd);
 
-    usleep(1000*1000);
+    //usleep(1000*1000);
 
     //exiting();
 
@@ -55,13 +55,22 @@ int main(int argc, char **argv){
         printf("file %s is open for write\n", PIPE_PATH);
     #endif
     
+    // Demande du message au client
+    char buffer_read;
+    int read_rtn;
+    do{
+        read_rtn = read(STDIN_FILENO, &buffer_read, 1);
+        exit_if(read_rtn==-1,"read");
+        #ifdef DEBUG
+            printf("read : %c\n",buffer_read);
+        #endif
+    }while(buffer_read != 'a');
 
     char buffer[100];
     int n = snprintf(buffer, sizeof(buffer),"%d,6,coucou", getpid());
     write(fd, buffer, n);
     printf("%d bytes sent : \"%s\"\n",n,buffer);
     
-    exiting();
-
+ 
     return 0;
 }
