@@ -14,7 +14,7 @@
 #define MAX_PID     32768
 
 
-#define DEBUG
+//#define DEBUG
 
 static const char *signames[] = {
     "SIGHUP",  "SIGINT",    "SIGQUIT", "SIGILL",   "SIGTRAP", "SIGABRT", "SIGEMT",  "SIGFPE",
@@ -73,6 +73,10 @@ int main(int argc, char **argv){
     sa.sa_handler = exiting;
 
     exit_if(sigaction(SIGINT, &sa, NULL) == -1,"sigaction");
+
+    if (access(PIPE_PATH, F_OK)){ // Si le pipe 0 n'existe pas
+        printf("Folder creating !\n");
+    }
 
     exit_if(mkfifo(MAIN_PIPE, 0666)==-1,"mkfifo"); // Create fifo file
     
@@ -168,9 +172,12 @@ int main(int argc, char **argv){
             }
             else { // HELLO RECEIVED
                 printf("Welcome to %d\n",rmt_pid);
-                char *path_pid_pipe;
-                sprintf(path_pid_pipe,"%s/%d",PIPE_PATH,rmt_pid);
-                int fd = open(PIPE_PATH, O_WRONLY);
+                char path_pid_pipe[100];
+                sprintf(path_pid_pipe,"%s%d",PIPE_PATH,rmt_pid);
+                #ifdef DEBUG
+                    printf("DEBUG : path_pid_pipe = %s\n",path_pid_pipe);
+                #endif
+                int fd = open(path_pid_pipe, O_WRONLY);
                 exit_if(fd == -1, "Pipe open"); // Open fifo file in read only
             }
         }
