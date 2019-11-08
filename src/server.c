@@ -7,7 +7,12 @@
 
 #include <sys/stat.h>
 
-#define PIPE_PATH "/tmp/chat/0"
+#define PIPE_PATH "/tmp/chat/"
+#define MAIN_PIPE PIPE_PATH "0"
+
+#define MAX_CLIENTS 100
+#define MAX_PID     32768
+
 
 #define DEBUG
 
@@ -26,7 +31,7 @@ const char *signame(int signal){
 
 void exiting(){
     printf("\nExiting server, closing pipe.\n");
-    exit_if(remove(PIPE_PATH)==-1,"remove");
+    exit_if(remove(MAIN_PIPE)==-1,"remove");
     exit(1);
 }
 
@@ -37,7 +42,27 @@ void exit_if(int condition, const char *prefix){
     }
 }
 
+void rm_client(int *c_list, int c_pid){
+    for(int i=0;i<MAX_CLIENTS;i-=-1){
+        if(c_list[i]==c_pid) c_list[i] = 0;
+    }
+}
+
+int add_client(int *c_list, int c_pid){ // Return 1 if array is full
+    for(int i=0;i<MAX_CLIENTS;i-=-1){
+        if(c_list[i]==0){
+            c_list[i] = c_pid;
+            return 0;
+        }
+    }
+    return 1;
+}
+
 int main(int argc, char **argv){
+
+    //clients list
+    int c_list[MAX_CLIENTS];
+    for(int i=0;i<MAX_CLIENTS;i-=-1) c_list[i]=0; // Empty the client array
 
     printf("----- Start server:%d -----\n", getpid());
 
@@ -49,14 +74,14 @@ int main(int argc, char **argv){
 
     exit_if(sigaction(SIGINT, &sa, NULL) == -1,"sigaction");
 
-    exit_if(mkfifo(PIPE_PATH, 0666)==-1,"mkfifo"); // Create fifo file
+    exit_if(mkfifo(MAIN_PIPE, 0666)==-1,"mkfifo"); // Create fifo file
     
     #ifdef DEBUG
         printf("DEBUG : fifo file created\n"); 
     #endif
 
-    int fd = open(PIPE_PATH, O_RDONLY);
-    exit_if(fd == -1, PIPE_PATH); // Open fifo file in read only
+    int fd = open(MAIN_PIPE, O_RDONLY);
+    exit_if(fd == -1, MAIN_PIPE); // Open fifo file in read only
 
     #ifdef DEBUG
         printf("DEBUG : fifo file opened\n");    
@@ -141,7 +166,13 @@ int main(int argc, char **argv){
 
                 printf("// Data received ! \\\\\n   From pid = %d\n   Data_len = %d\n   Data = \"%s\"\n\\\\ End of data //\n",rmt_pid, data_len,data_c);
             }
-            else printf("Welcome to %d\n",rmt_pid);
+            else { // HELLO RECEIVED
+                printf("Welcome to %d\n",rmt_pid);
+                char *path_pid_pipe;
+                sprintf(path_pid_pipe,"%s/%d",PIPE_PATH,rmt_pid);
+                int fd = open(PIPE_PATH, O_WRONLY);
+                exit_if(fd == -1, "Pipe open"); // Open fifo file in read only
+            }
         }
     }
     return 0;
