@@ -9,7 +9,7 @@
 #define PIPE_PATH "/tmp/chat"
 #define MAIN_PIPE PIPE_PATH "/0"
 
-#define DEBUG
+#define EXIT_MESSAGE "igloo/igloo\\igloo"
 
 int fd = -1;
 
@@ -28,7 +28,7 @@ const char *signame(int signal){
 
 void send_disconnect(){
     char buffer[100];
-    int n = snprintf(buffer, sizeof(buffer),"%d,18,igloo/igloo\\igloo", getpid());
+    int n = snprintf(buffer, sizeof(buffer),"%d,%d,%s", getpid(),sizeof(EXIT_MESSAGE),EXIT_MESSAGE);
     write(fd, buffer, n);
     #ifdef DEBUG
         printf("DEBUG : disconnect sent\n");    
@@ -36,9 +36,9 @@ void send_disconnect(){
 }
 
 void exiting(){
-    /*if(fd > 0) {
+    if(fd > 0) {
         send_disconnect(fd);
-    }*/
+    }
     printf("----- Stop client -----\n");
     char path_pid_pipe[100];
     sprintf(path_pid_pipe,"%s/%d",PIPE_PATH,getpid());
@@ -63,12 +63,28 @@ void send_hello(int fd){
     #endif
 }
 
+void read_message(char *message){
+    int i = 0;
+
+    char buffer_read;
+    int read_rtn;
+
+    do{
+        read(STDIN_FILENO, &message[i], 1);
+        exit_if(read_rtn==-1,"read");
+        #ifdef DEBUG
+            printf("read : %s read_rtn = %d\n",buffer_read,read_rtn);
+        #endif
+    }while(buffer_read != 10);
+}
+
 int main(int argc, char **argv){   
     printf("----- Start client:%d -----\n",getpid());
 
     struct sigaction sa = {
         .sa_flags = 0,
     };
+
     sigemptyset(&sa.sa_mask);
     sa.sa_handler = exiting;
 
@@ -90,7 +106,7 @@ int main(int argc, char **argv){
     exit_if(fd == -1, "Pipe open"); // Open fifo file in read only
 
     #ifdef DEBUG
-        printf("DEBUG : fifo file opened\n");    
+        printf("DEBUG : fifo file opened\n");
     #endif
 
     send_hello(fd);
@@ -100,20 +116,39 @@ int main(int argc, char **argv){
     #endif
     
     // Demande du message au client
-    char buffer_read;
-    int read_rtn;
-    do{
-        read_rtn = read(STDIN_FILENO, &buffer_read, 1);
-        exit_if(read_rtn==-1,"read");
-        #ifdef DEBUG
-            printf("read : %c\n",buffer_read);
-        #endif
-    }while(buffer_read != 'a');
 
+    char message[100];
     char buffer[100];
-    int n = snprintf(buffer, sizeof(buffer),"%d,6,coucou", getpid());
-    write(fd, buffer, n);
-    printf("%d bytes sent : \"%s\"\n",n,buffer);
+    int n;
+    int i = 0;
+
+    char buffer_read[1];
+    int read_rtn;
+    while(1){
+        printf("Msg : ");
+        fflush(stdout);
+        i=0;
+        do{
+            read_rtn = read(STDIN_FILENO, buffer_read, 1);
+            exit_if(read_rtn==-1,"read");
+            #ifdef DEBUG
+                printf("DEBUG : read : \"%c\"=%d read_rtn = %d\n",buffer_read[0],(int)buffer_read[0],read_rtn);
+            #endif
+            if(buffer_read[0]==10) buffer[i] = 0;
+            else buffer[i] = buffer_read[0];
+            i-=-1;
+        }while(buffer_read[0] != 10);
+        
+        n = snprintf(message, sizeof(message),"%d,%d,%s", getpid(), strlen(buffer), buffer);
+        write(fd, message, n);
+
+        #ifdef DEBUG
+            printf("DEBUG : %d bytes sent : \"%s\"\n",n,buffer);
+        #endif
+    }
+    
+
+    
  
     return 0;
 

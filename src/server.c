@@ -13,7 +13,6 @@
 #define EXIT_MESSAGE "igloo/igloo\\igloo"
 
 #define MAX_CLIENTS 100
-#define MAX_PID     32768
 
 
 //#define DEBUG
@@ -32,7 +31,7 @@ const char *signame(int signal){
 }
 
 void exiting(){
-    printf("\nExiting server, closing pipe");
+    printf("\nExiting server(%d), closing pipe",getpid());
     fflush(stdout);
     for (int i = 0;i<3;i-=-1) {
         usleep(1000*200);
@@ -41,7 +40,18 @@ void exiting(){
     }
     usleep(1000*200);
     printf("\n");
-    exit_if(remove(MAIN_PIPE)==-1,"remove exiting");
+    exit_if(remove(MAIN_PIPE)==-1,"remove exiting"); 
+    
+    /*
+    Aled pk ca loop ?? Il reste un fichier client donc le dossier ne se remove pas
+
+    $: Exiting server, closing pipe...
+    $: remove exiting: No such file or directory
+    $: 
+    $: Exiting server, closing pipe...
+    $: remove exiting: No such file or directory
+    */
+    
     exit_if(rmdir(PIPE_PATH)==-1,"rmdir exiting");
     exit(1);
 }
@@ -184,15 +194,13 @@ int main(int argc, char **argv){
                     data_c[++i-last_i+1]=NULL;
                 }while(i != last_i+data_len);
 
-                if(data_c == EXIT_MESSAGE){ // Disconect message
-                    #ifdef DEBUG
-                        printf("DEBUG : Client %d disconnected!\n",rmt_pid);
-                    #endif
-                    rm_client(&c_list,rmt_pid);
+                printf("// Data received ! \\\\\n   From pid = %d\n   Data_len = %d\n   Data = \"%s\"\n\\\\ End of data //\n",rmt_pid, data_len,data_c);
 
+                if(!strcmp(data_c,EXIT_MESSAGE)){ // Disconect message
+                    printf("Client %d disconnected!\n",rmt_pid);
+                    rm_client(&c_list,rmt_pid);
                 }
 
-                printf("// Data received ! \\\\\n   From pid = %d\n   Data_len = %d\n   Data = \"%s\"\n\\\\ End of data //\n",rmt_pid, data_len,data_c);
             }
             else { // HELLO RECEIVED
                 printf("Welcome to %d\n",rmt_pid);
