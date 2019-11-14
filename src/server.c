@@ -10,7 +10,7 @@
 #define PIPE_PATH "/tmp/chat"
 #define MAIN_PIPE PIPE_PATH "/0"
 
-#define EXIT_MESSAGE "igloo/igloo\\igloo"
+#define EXIT_MESSAGE "igloo/igloo\\igloo" //0x04
 
 #define MAX_CLIENTS 100
 
@@ -22,6 +22,12 @@ static const char *signames[] = {
     "SIGKILL", "SIGBUS",    "SIGSEGV", "SIGSYS",   "SIGPIPE", "SIGALRM", "SIGTERM", "SIGURG",
     "SIGSTOP", "SIGTSTP",   "SIGCONT", "SIGCHLD",  "SIGTTIN", "SIGTTOU", "SIGIO",   "SIGXCPU",
     "SIGXFSZ", "SIGVTALRM", "SIGPROF", "SIGWINCH", "SIGINFO", "SIGUSR1", "SIGUSR2",
+};
+
+struct client{
+    int pid;
+    char *nick;
+    int fd;
 };
 
 const char *signame(int signal){
@@ -63,32 +69,45 @@ void exit_if(int condition, const char *prefix){
     }
 }
 
-void rm_client(int *c_list, int c_pid){
+void rm_client(struct client *c_list, int c_pid){
     for(int i=0;i<MAX_CLIENTS;i-=-1){
-        if(c_list[i]==c_pid) c_list[i] = 0;
+        if(c_list[i].pid==c_pid) c_list[i].pid = 0;
     }
 }
 
-int add_client(int *c_list, int c_pid){ // Return 1 if array is full
-    for(int i=0;i<MAX_CLIENTS;i-=-1){
-        if(c_list[i]==0){
-            c_list[i] = c_pid;
+int add_client(struct client *c_list, int c_pid){ // Return 1 if array is full
+    char path_pid_pipe[100];
+    sprintf(path_pid_pipe,"%s/%d",PIPE_PATH,c_pid);
+
+    #ifdef DEBUG
+        printf("DEBUG : path_pid_pipe = %s\n",path_pid_pipe);
+        print_c_array(c_list);
+    #endif
+
+    int fd = open(path_pid_pipe, O_WRONLY | O_NONBLOCK);
+    exit_if(fd == -1, "Pipe open"); // Open fifo file in read only
+
+    for(int i=0;i<MAX_CLIENTS;i-=-1){ // On cherche une place libre
+        if(c_list[i].pid==0){
+            c_list[i].pid = c_pid;
+            c_list[i].fd = fd;
             return 0;
         }
     }
     return 1;
 }
 
-void print_c_array(int *c_list){
-    for(int i = 0;i<MAX_CLIENTS;i-=-1) printf("DEBUG : clt(%d)=%d\n",i,c_list[i]);
+void print_c_array(struct client *c_list){
+    for(int i = 0;i<MAX_CLIENTS;i-=-1) printf("DEBUG : clt(%d)=%d\n",i,c_list[i].pid);
     printf("\n");
 }
 
 int main(int argc, char **argv){
 
     //clients list
-    int c_list[MAX_CLIENTS];
-    for(int i=0;i<MAX_CLIENTS;i-=-1) c_list[i]=0; // Empty the client array
+    struct client c_list[MAX_CLIENTS];
+
+    for(int i=0;i<MAX_CLIENTS;i-=-1) c_list[i].pid=0; // Empty the client array
 
     printf("----- Start server:%d -----\n", getpid());
 
@@ -196,24 +215,18 @@ int main(int argc, char **argv){
 
                 printf("// Data received ! \\\\\n   From pid = %d\n   Data_len = %d\n   Data = \"%s\"\n\\\\ End of data //\n",rmt_pid, data_len,data_c);
 
+                printf("strcmp(data_c,EXIT_MESSAGE) = %d\n",strcmp(data_c,EXIT_MESSAGE));
+                
                 if(!strcmp(data_c,EXIT_MESSAGE)){ // Disconect message
                     printf("Client %d disconnected!\n",rmt_pid);
-                    rm_client(&c_list,rmt_pid);
+                    rm_client(c_list,rmt_pid);
                 }
+                
 
             }
             else { // HELLO RECEIVED
                 printf("Welcome to %d\n",rmt_pid);
-                add_client(&c_list, rmt_pid);
-
-                char path_pid_pipe[100];
-                sprintf(path_pid_pipe,"%s/%d",PIPE_PATH,rmt_pid);
-                #ifdef DEBUG
-                    printf("DEBUG : path_pid_pipe = %s\n",path_pid_pipe);
-                    print_c_array(c_list);
-                #endif
-                //int fd = open(path_pid_pipe, O_WRONLY);
-                //exit_if(fd == -1, "Pipe open"); // Open fifo file in read only
+                printf("add = %d\n",add_client(c_list, rmt_pid));
             }
         }
     }
