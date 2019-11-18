@@ -6,7 +6,16 @@ BINDIR		= bin/release
 OBJDIR_D	= obj/debug
 BINDIR_D	= bin/debug
 
-# Client targets
+# Library targets
+
+LIB_SRC	= $(SRCDIR)/functions.c
+
+LIB_OBJ_C	= $(OBJDIR)/lib_c.o
+LIB_OBJ_S	= $(OBJDIR)/lib_s.o
+LIB_OBJ_C_D	= $(OBJDIR)/lib_c.o
+LIB_OBJ_S_D	= $(OBJDIR_D)/lib_s.o
+
+# Server targets
 
 SRV_SRC	= $(SRCDIR)/server.c
 
@@ -26,9 +35,9 @@ CLT_OUT_D	= $(BINDIR_D)/client
 
 # Common targets
 
-OBJS	= $(CLT_OBJ) $(SRV_OBJ)
+OBJS	= $(CLT_OBJ) $(SRV_OBJ) $(LIB_OBJ)
 OUT		= $(CLT_OUT) $(SRV_OUT)
-OBJS_D	= $(CLT_OBJ_D) $(SRV_OBJ_D)
+OBJS_D	= $(CLT_OBJ_D) $(SRV_OBJ_D) $(LIB_OBJ_D)
 OUT_D	= $(CLT_OUT_D) $(SRV_OUT_D)
 
 # Compiler options & flags
@@ -40,39 +49,51 @@ FLAGS	= -g -c -Wall
 
 # Target rules
 
-all: $(SRV_OUT) $(CLT_OUT) $(SRV_OUT_D) $(CLT_OUT_D)
+all: $(CLT_OUT) $(SRV_OUT) $(CLT_OUT_D) $(SRV_OUT_D)
 
-debug: $(SRV_OUT_D) $(CLT_OUT_D)
+debug: $(CLT_OUT_D) $(SRV_OUT_D)
 
-release: $(SRV_OUT) $(CLT_OUT)
+release: $(CLT_OUT) $(SRV_OUT)
 
 # DEBUG COMPILING
 
-$(CLT_OUT_D): $(CLT_OBJ_D) $(LFLAGS)
-	$(CC_D) -g $(CLT_OBJ_D) -o $(CLT_OUT_D)
+$(CLT_OUT_D): $(CLT_OBJ_D) $(LIB_OBJ_C_D) $(LFLAGS)
+	$(CC) -D DEBUG -g $(LIB_OBJ_C_D) $(CLT_OBJ_D) -o $(CLT_OUT_D)
 
-$(SRV_OUT_D): $(SRV_OBJ_D) $(LFLAGS)
-	$(CC_D) -g $(SRV_OBJ_D) -o $(SRV_OUT_D)
+$(SRV_OUT_D): $(SRV_OBJ_D) $(LIB_OBJ_S_D) $(LFLAGS)
+	$(CC) -D DEBUG -g $(LIB_OBJ_S_D) $(SRV_OBJ_D) -o $(SRV_OUT_D)
 	
 $(CLT_OBJ_D): $(CLT_SRC)
-	$(CC_D) $(FLAGS) $(CLT_SRC) -o $(CLT_OBJ_D)
+	$(CC) -D DEBUG $(FLAGS) $(CLT_SRC) -o $(CLT_OBJ_D)
 
 $(SRV_OBJ_D): $(SRV_SRC)
-	$(CC_D) $(FLAGS) $(SRV_SRC) -o $(SRV_OBJ_D)
+	$(CC) -D DEBUG $(FLAGS) $(SRV_SRC) -o $(SRV_OBJ_D)
+
+$(LIB_OBJ_C_D): $(LIB_SRC)
+	$(CC) -D DEBUG -D _CLIENT $(FLAGS) $(LIB_SRC) -o $(LIB_OBJ_C_D)
+
+$(LIB_OBJ_S_D): $(LIB_SRC)
+	$(CC) -D DEBUG -D _SERVER $(FLAGS) $(LIB_SRC) -o $(LIB_OBJ_S_D)
 
 # RELEASE COMPILING
 
-$(CLT_OUT): $(CLT_OBJ) $(LFLAGS)
-	$(CC) -g $(CLT_OBJ) -o $(CLT_OUT)
+$(CLT_OUT): $(CLT_OBJ) $(LIB_OBJ_C) $(LFLAGS)
+	$(CC) -g  $(LIB_OBJ_C) $(CLT_OBJ) -o $(CLT_OUT)
 
-$(SRV_OUT): $(SRV_OBJ) $(LFLAGS)
-	$(CC) -g $(SRV_OBJ) -o $(SRV_OUT)
+$(SRV_OUT): $(SRV_OBJ) $(LIB_OBJ_S) $(LFLAGS)
+	$(CC) -g $(LIB_OBJ_S) $(SRV_OBJ) -o $(SRV_OUT)
 	
 $(CLT_OBJ): $(CLT_SRC)
 	$(CC) $(FLAGS) $(CLT_SRC) -o $(CLT_OBJ)
 
 $(SRV_OBJ): $(SRV_SRC)
 	$(CC) $(FLAGS) $(SRV_SRC) -o $(SRV_OBJ)
+
+$(LIB_OBJ_C): $(LIB_SRC)
+	$(CC) -D _CLIENT $(FLAGS) $(LIB_SRC) -o $(LIB_OBJ_C)
+
+$(LIB_OBJ_S): $(LIB_SRC)
+	$(CC) -D _SERVER $(FLAGS) $(LIB_SRC) -o $(LIB_OBJ_S)
 
 # Clean rules
 

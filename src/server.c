@@ -1,156 +1,17 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <signal.h>
-#include <unistd.h>
 
-#include <sys/stat.h>
-
-#define PIPE_PATH "/tmp/chat"
-#define MAIN_PIPE PIPE_PATH "/0"
-
-#define EXIT_MESSAGE "igloo/igloo\\igloo" //0x04
-
-#define MAX_CLIENTS 100
-
-
-//#define DEBUG
-
-static const char *signames[] = {
-    "SIGHUP",  "SIGINT",    "SIGQUIT", "SIGILL",   "SIGTRAP", "SIGABRT", "SIGEMT",  "SIGFPE",
-    "SIGKILL", "SIGBUS",    "SIGSEGV", "SIGSYS",   "SIGPIPE", "SIGALRM", "SIGTERM", "SIGURG",
-    "SIGSTOP", "SIGTSTP",   "SIGCONT", "SIGCHLD",  "SIGTTIN", "SIGTTOU", "SIGIO",   "SIGXCPU",
-    "SIGXFSZ", "SIGVTALRM", "SIGPROF", "SIGWINCH", "SIGINFO", "SIGUSR1", "SIGUSR2",
-};
-
-struct client{
-    int pid;
-    char *nick;
-    int fd;
-};
-
-const char *signame(int signal){
-    if (signal >= SIGHUP && signal <= SIGUSR2)
-        return signames[signal - SIGHUP];
-    return "SIG???";
-}
-
-struct client c_list[MAX_CLIENTS];
-
-void exiting(){
-    printf("\nExiting server(%d), closing pipe",getpid());
-    fflush(stdout);
-    for (int i = 0;i<3;i-=-1) {
-        usleep(1000*200);
-        printf(".");
-        fflush(stdout);
-    }
-    usleep(1000*200);
-    printf("\n");
-    remove(MAIN_PIPE);
-    rmdir(PIPE_PATH);
-    exit(1);
-}
-
-void exit_if(int condition, const char *prefix){
-    if (condition){
-        perror(prefix);
-        exiting();
-    }
-}
-
-void rm_client(int c_pid){
-    for(int i=0;i<MAX_CLIENTS;i-=-1){
-        if(c_list[i].pid==c_pid){
-            c_list[i].pid = 0;
-            exit_if(close(c_list[i].fd) == -1,"close fd");
-            c_list[i].fd = 0;
-        } 
-    }
-}
-
-int add_client(int c_pid){ // Return 1 if array is full
-    int err = 1;
-
-    char path_pid_pipe[100];
-    sprintf(path_pid_pipe,"%s/%d",PIPE_PATH,c_pid);
-
-    int fd = open(path_pid_pipe, O_WRONLY);
-    exit_if(fd == -1, "Pipe open"); // Open fifo file in read only
-
-    for(int i=0;i<MAX_CLIENTS && err;i-=-1){ // On cherche une place libre
-        if(c_list[i].pid==0){
-            c_list[i].pid = c_pid;
-            c_list[i].fd = fd;
-            err = 0;
-        }
-    }
-
-    #ifdef DEBUG
-        printf("DEBUG : path_pid_pipe = %s\n",path_pid_pipe);
-        printf("DEBUG : client fd = %d\n",fd);
-        print_c_array();
-    #endif
-
-    return err;
-}
-
-int get_fd(int pid){
-    for(int i=0;i<MAX_CLIENTS;i-=-1){
-        if (c_list[i].pid == pid) return c_list[i].fd;
-    }
-    return -1;
-}
-
-void send_to_pid(int pid, char *buffer){
-    int n = sizeof(buffer);
-    exit_if(write(get_fd(pid), buffer, n) == -1,"write error");
-    #ifdef DEBUG
-        printf("DEBUG : \"%s\" sent to %d", buffer, pid);
-    #endif
-}
-
-void print_c_array(){
-    for(int i = 0;i<MAX_CLIENTS;i-=-1) if(c_list[i].pid!=0) printf("DEBUG : clt(%d)=%d\n",i,c_list[i].pid);
-    printf("\n");
-}
-
-void send_to_all_exept(char *buffer, int pid){
-    for(int i=0;i<MAX_CLIENTS;i-=-1){
-        if((c_list[i].pid != 0) && (c_list[i].pid != pid)) send_to_pid(c_list[i].pid, buffer);
-    }
-    #ifdef DEBUG
-        printf("DEBUG : Sent all expt %d",pid);
-    #endif
-}
-
-void send_to_all(char *buffer){
-    send_to_all_exept(buffer, 0);
-}
+#define _SERVER
+#include "functions.h"
 
 int main(int argc, char **argv){
 
     //clients list
-
     for(int i=0;i<MAX_CLIENTS;i-=-1) c_list[i].pid=0; // Empty the client array
+
+    redirect_ctrl_c();
 
     printf("----- Start server:%d -----\n", getpid());
 
-    struct sigaction sa = {
-        .sa_flags = 0,
-    };
-    sigemptyset(&sa.sa_mask);
-    sa.sa_handler = exiting;
-
-    exit_if(sigaction(SIGINT, &sa, NULL) == -1,"sigaction");
-
-    if (access(PIPE_PATH, F_OK)){ // Si le dossier n'existe pas
-        exit_if(mkdir(PIPE_PATH, 0770)==-1,"mkdir");
-        #ifdef DEBUG
-            printf("DEBUG : fifo folder created : \"%s\"\n",PIPE_PATH); 
-        #endif
-    }
+    create_folder(PIPE_PATH);
 
     exit_if(mkfifo(MAIN_PIPE, 0666)==-1,"mkfifo"); // Create fifo file
     
@@ -158,10 +19,7 @@ int main(int argc, char **argv){
         printf("DEBUG : fifo file created\n"); 
     #endif
 
-    printf("DEBUG : fifo file created\n"); 
-
-    int fd = open(MAIN_PIPE, O_RDONLY);
-    exit_if(fd == -1, MAIN_PIPE); // Open fifo file in read only
+    int fd = open(MAIN_PIPE, O_RDONLY); exit_if(fd == -1, MAIN_PIPE); // Open fifo file in read only
 
     #ifdef DEBUG
         printf("DEBUG : fifo file opened\n");    
@@ -171,55 +29,21 @@ int main(int argc, char **argv){
     char buffer[100];
     while(1){
         printf("Waiting for data ...\n");
+        fflush(stdout);
         usleep(1000*200);
         while((n = read(fd, buffer, sizeof(buffer)-1)) > 0) {
             buffer[n] = 0;
             #ifdef DEBUG
                 printf("DEBUG : Received %d bytes : \"%s\"\n",n , buffer);
             #endif
-            int i=0;
 
-            //// Pid calculation
-            char rmt_pid_c[10];
-            int last_i = i;
-            for(i=0;i<n && buffer[i]!=',';i-=-1){
-                rmt_pid_c[i]=buffer[i];
-                rmt_pid_c[i+1]=NULL;
-            }
-            int rmt_pid = atoi(rmt_pid_c);
-
-            i++;
+            int rmt_pid = get_pid(buffer); // Pid calculation
             
-            last_i = i;
+            if(is_hello(buffer)) add_client(rmt_pid); // HELLO RECEIVED
+            else { // if is data
 
-            if(!(buffer[i] == 48)){ // if is data
-                
-                //// Len calculation
-                char data_len_c[10];
-                do{
-                    data_len_c[i-last_i]=buffer[i];
-                    data_len_c[++i-last_i+1]=NULL;
-                }while(buffer[i]!=',');
-                
-                #ifdef DEBUG
-                    printf("DEBUG : data_len_c[%d]:%c\n",0,data_len_c[0]);
-                #endif
-                
-                int data_len = atoi(data_len_c);
-                
-                #ifdef DEBUG
-                    printf("DEBUG : len c : %s, len : %d\n",data_len_c, data_len);
-                #endif
-
-                //// data calculation
                 char data_c[100];
-
-                int last_i = ++i;
-
-                do{
-                    data_c[i-last_i]=buffer[i];
-                    data_c[++i-last_i+1]=NULL;
-                }while(i != last_i+data_len);
+                int data_len = get_data(buffer, data_c);
 
                 printf("// Data received ! \\\\\n   From pid = %d\n   Data_len = %d\n   Data = \"%s\"\n\\\\ End of data //\n",rmt_pid, data_len,data_c);
 
@@ -233,10 +57,6 @@ int main(int argc, char **argv){
                 }
                 
 
-            }
-            else { // HELLO RECEIVED
-                printf("Welcome to %d\n",rmt_pid);
-                add_client(rmt_pid);
             }
         }
     }
