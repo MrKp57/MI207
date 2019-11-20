@@ -1,1 +1,5 @@
 Projet chat client serveur
+
+
+WIP :
+  - Each sys call can return -1 and need 2 be tested.
