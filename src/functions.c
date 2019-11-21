@@ -38,7 +38,7 @@ void send_disconnect(){
     if(fd == -1) printf("fd error\n");
 
     char buffer[100];
-    int n = snprintf(buffer, sizeof(buffer),"%d,%lu,%s", getpid(),sizeof(EXIT_MESSAGE),EXIT_MESSAGE);
+    int n = snprintf(buffer, sizeof(buffer),"%d,%lu,%s", getppid(),sizeof(EXIT_MESSAGE),EXIT_MESSAGE);
 
     if(write(fd, buffer, n) == -1) printf("write disc error\n");
     #ifdef DEBUG
@@ -49,10 +49,10 @@ void send_disconnect(){
     
 #ifdef _CLIENT
     void client_exit(){
-        printf("----- Stop client -----\n");
+        printf("\n----- Stop client (%d) -----\n",getppid());
         send_disconnect();
         char path_pid_pipe[100];
-        sprintf(path_pid_pipe,"%s/%d",PIPE_PATH,getpid());
+        sprintf(path_pid_pipe,"%s/%d",PIPE_PATH,getppid());
         if(remove(path_pid_pipe) == -1) printf("remove error\n");
         fflush(stdout);
         exit(EXIT_FAILURE);
@@ -86,76 +86,121 @@ void exit_if(int condition, const char *prefix){
     }
 }
 
-void rm_client(int c_pid){
-    for(int i=0;i<MAX_CLIENTS;i-=-1){
-        if(c_list[i].pid==c_pid){
-            c_list[i].pid = 0;
-            exit_if(close(c_list[i].fd) == -1,"close fd");
-            c_list[i].fd = 0;
-        } 
+#ifndef _CLIENT
+
+    void rm_client(struct client_list *c_list, int c_pid){
+        
+        struct client *c_tmp = c_list->first_client;
+        struct client *prev_c_tmp = malloc(sizeof(struct client));
+
+        for (int i=0;c_tmp->next_client != NULL;i-=-1){
+            if(c_tmp->pid == c_pid){
+                exit_if(close(c_tmp->fd) == -1,"close fd"); // On ferme le fd
+
+                printf("I go there 1\n");
+            
+                if(!i) {
+                    c_list->first_client = c_tmp->next_client; // si c'est le premier client
+                    printf("I go there 2\n");
+                }
+                else {
+                    prev_c_tmp->next_client = c_tmp->next_client; // Le client suivant du client précédent n'est plus nous ;(
+                    printf("I go there 3\n");
+                }
+                free(c_tmp); // On libère la ram allouée au client
+                
+                c_list->nb_of_clients+=-1;
+
+                print_c_list(*c_list);
+                if(!c_list->nb_of_clients) server_exit();
+                return;
+            }
+
+            prev_c_tmp = c_tmp;
+            c_tmp = c_tmp->next_client;
+        }
+    }
+
+#endif
+
+void print_c_list(struct client_list c_list){
+
+    printf("%d clients connected !\n",c_list.nb_of_clients);
+    printf("First one at %p\n",c_list.first_client);
+    
+    struct client *c_tmp = c_list.first_client;
+
+    for(int i = 0;c_tmp->next_client != NULL;i-=-1){
+        printf("Client - %d\n  fd - %d\n  pid - %d\n  nick - \"%s\"\n  next - \"%p\"\n",i,c_tmp->fd,c_tmp->pid,c_tmp->nick,c_tmp->next_client);
+        c_tmp = c_tmp->next_client;
     }
 }
 
-void print_c_array(){
-    for(int i = 0;i<MAX_CLIENTS;i-=-1) if(c_list[i].pid!=0) printf("DEBUG : clt(%d)=%d\n",i,c_list[i].pid);
-    printf("\n");
-}
-
-int add_client(int c_pid){ // Return 1 if array is full
+void add_client(struct client_list *c_list, int c_pid){
 
     printf("Welcome to %d\n",c_pid);
-
-    int err = 1;
-
+    
     char path_pid_pipe[100];
     sprintf(path_pid_pipe,"%s/%d",PIPE_PATH,c_pid);
 
-    int fd = open(path_pid_pipe, O_WRONLY); exit_if(fd == -1, "Pipe open"); // Open fifo file in read only
+    int fd = open(path_pid_pipe, O_WRONLY); exit_if(fd == -1, "Client pipe open"); // Open fifo file in read only
 
-    for(int i=0;i<MAX_CLIENTS && err;i-=-1){ // On cherche une place libre
-        if(c_list[i].pid==0){
-            c_list[i].pid = c_pid;
-            c_list[i].fd = fd;
-            err = 0;
-        }
-    }
+    struct client *new_c = malloc(sizeof(struct client));
+
+    if(c_list->nb_of_clients == 0) new_c->next_client = NULL;
+    else new_c->next_client = c_list->first_client;
+
+    c_list->first_client = new_c;
+
+    new_c->pid = c_pid;
+    new_c->fd  = fd;
+    new_c->nick  = "default_nick";
+
+    c_list->nb_of_clients++;
 
     #ifdef DEBUG
         printf("DEBUG : path_pid_pipe = %s\n",path_pid_pipe);
         printf("DEBUG : client fd = %d\n",fd);
-        print_c_array();
+        print_c_list(*c_list);
     #endif
-
-    return err;
 }
 
-int get_fd(int pid){
-    for(int i=0;i<MAX_CLIENTS;i-=-1){
-        if (c_list[i].pid == pid) return c_list[i].fd;
+int get_fd(struct client_list c_list, int pid){
+
+    struct client *c_tmp = c_list.first_client;
+
+    for(int i=0;i<c_list.nb_of_clients;i-=-1){
+        if (c_tmp->pid == pid) return c_tmp->fd;
+        c_tmp = c_tmp->next_client;        
     }
     return -1;
 }
 
-void send_to_pid(int pid, char *buffer){
-    int n = sizeof(buffer);
-    exit_if(write(get_fd(pid), buffer, n) == -1,"write error");
+void send_to_pid(struct client_list c_list, int pid, char *buffer){
+    int n = strlen(buffer);
+    exit_if(write(get_fd(c_list, pid), buffer, n) == -1,"write error");
     #ifdef DEBUG
-        printf("DEBUG : \"%s\" sent to %d", buffer, pid);
+        printf("DEBUG : \"%s\" sent to %d, n = %d\n", buffer, pid, n);
     #endif
 }
 
-void send_to_all_exept(char *buffer, int pid){
-    for(int i=0;i<MAX_CLIENTS;i-=-1){
-        if((c_list[i].pid != 0) && (c_list[i].pid != pid)) send_to_pid(c_list[i].pid, buffer);
+void send_to_all_exept(struct client_list c_list, char *buffer, int pid){
+
+    struct client *c_tmp = c_list.first_client;
+
+    for(int i=0;i<c_list.nb_of_clients;i-=-1){
+        if((c_tmp->pid != 0) && (c_tmp->pid != pid)) send_to_pid(c_list, c_tmp->pid, buffer);
+        c_tmp = c_tmp->next_client;
     }
+
     #ifdef DEBUG
         printf("DEBUG : Sent all expt %d\n",pid);
-        printf("DEBUG : Sent %d bytes : \"%s\"\n",strlen(buffer) , buffer);
+        printf("DEBUG : Sent %lu bytes : \"%s\"\n",strlen(buffer) , buffer);
     #endif
 }
 
-void send_to_all(char *buffer){
-    send_to_all_exept(buffer, 0);
+void send_to_all(struct client_list c_list, char *buffer){
+    send_to_all_exept(c_list, buffer, 0);
 }
 
 void redirect_ctrl_c(){

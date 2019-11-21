@@ -5,8 +5,9 @@
 
 int main(int argc, char **argv){
 
-    //clients list
-    for(int i=0;i<MAX_CLIENTS;i-=-1) c_list[i].pid=0; // Empty the client array
+    struct client_list c_list;
+    c_list.first_client  = NULL;
+    c_list.nb_of_clients = 0;
 
     redirect_ctrl_c();
 
@@ -40,7 +41,7 @@ int main(int argc, char **argv){
 
             int rmt_pid = get_pid(buffer); // Pid calculation
             
-            if(is_hello(buffer)) add_client(rmt_pid); // HELLO RECEIVED
+            if(is_hello(buffer)) add_client(&c_list,rmt_pid); // HELLO RECEIVED
             else { // if is data
 
                 char data_c[100];
@@ -50,11 +51,11 @@ int main(int argc, char **argv){
 
                 if(!strcmp(data_c,EXIT_MESSAGE)){ // Disconect message
                     printf("Client %d disconnected!\n",rmt_pid);
-                    rm_client(rmt_pid);
+                    rm_client(&c_list, rmt_pid);
                 }
                 else {
                     printf("sending to all expt %d\n",rmt_pid);
-                    send_to_all_exept(buffer, rmt_pid);
+                    send_to_all_exept(c_list, buffer, rmt_pid);
                 }
                 
 
