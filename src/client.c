@@ -2,6 +2,7 @@
 #ifndef _CLIENT
 #define _CLIENT
 #include "functions.h"
+#include <sched.h>
 
 /*
 int read_message(char *message){
@@ -12,9 +13,24 @@ int read_message(char *message){
         exit_if(n==-1,"read");
         message[n]
     }while(message[i] != 10);
-}
-*/
+}*/
 
+void lockfile_protect() {
+    while(!access(LOCKFILE_PATH, F_OK)) {
+        sched_yield(); //On ne test pas la valeur de retour car notre programme est conçu pour LINUX :) 
+        #ifdef DEBUG
+            printf("DEBUG : WAITING FOR 0.LOCK FREE ... SCHED YIELD\n");
+        #endif
+    }
+    exit_if(open(LOCKFILE_PATH, O_CREAT)==-1,"Lockfile creation"); // Create lockfile 
+
+}
+
+void send_to_server(int fd, char* message, int n) {
+    lockfile_protect();
+    write(fd, message, n);
+    remove(LOCKFILE_PATH);
+}
 
 int main(int argc, char **argv){
 
@@ -45,6 +61,21 @@ int main(int argc, char **argv){
     #ifdef DEBUG
         printf("DEBUG : fifo file opened\n");    
     #endif
+
+    //Choose nickname
+    printf("Please choose a nickname before chating with us :\n");
+    char buffer_nickname[20];
+    int jeanpierre = read(STDIN_FILENO, buffer_nickname, 20);
+    buffer_nickname[jeanpierre-1] = NULL;
+
+    #ifdef DEBUG
+        printf("DEBUG : %s, size=%d\n", buffer_nickname, strlen(buffer_nickname));
+    #endif
+
+    char cmd[100];
+    int n = snprintf(cmd, sizeof(cmd),"%d,%lu,%s", getpid(), strlen(cmd), "/who");
+
+    send_to_server(fd, cmd, n);
     
     int fork_rtn;
 
@@ -83,6 +114,9 @@ int main(int argc, char **argv){
                     
                     printf("\n\n// Data received ! \\\\\n   From pid = %d\n   Data_len = %d\n   Data = \"%s\"\n\\\\ End of data //\n",rmt_pid, data_len,data_c);
                     printf("%s",prompt);
+
+                    //Check if data received is command
+
                     fflush(stdout);
                 }
             }
@@ -96,6 +130,7 @@ int main(int argc, char **argv){
 
             char buffer_read[1];
             int read_rtn;
+
             while(1){
                 printf("%s",prompt);
                 fflush(stdout);
