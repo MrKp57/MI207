@@ -20,6 +20,10 @@
 
 #define MAX_CLIENTS 100
 
+#define LOG_PATH "/tmp/chat.log"
+#define SERV_DAEMON_LOGFILE_PATH LOG_PATH "/srv_dem.log"
+
+
 static const char *signames[] = {
     "SIGHUP",  "SIGINT",    "SIGQUIT", "SIGILL",   "SIGTRAP", "SIGABRT", "SIGEMT",  "SIGFPE",
     "SIGKILL", "SIGBUS",    "SIGSEGV", "SIGSYS",   "SIGPIPE", "SIGALRM", "SIGTERM", "SIGURG",

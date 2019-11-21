@@ -5,6 +5,51 @@
 
 int main(int argc, char **argv){
 
+    if(argc > 1){
+        if(!strcmp(argv[1],"dem")){
+            const char *log_fname = (argc == 3) ? argv[2] : SERV_DAEMON_LOGFILE_PATH;
+
+            int i;
+            for(i = strlen(log_fname);log_fname[i]!='/';i--);
+
+            char *path = malloc(i);
+            memcpy(path, log_fname, i);
+
+            create_folder(path);
+            
+            int fork_session;
+
+            int log_fd = open(log_fname, O_WRONLY | O_CREAT, 0744);
+
+            exit_if(log_fd == -1, "open logfile");
+
+            printf("%s = %d\n",log_fname, log_fd);
+            exit_if(write(log_fd,"coucou",6) == -1,"write");
+
+            exit_if(dup2(log_fd,STDOUT_FILENO) == -1,"Dup2 error stdout");
+            exit_if(dup2(log_fd,STDERR_FILENO) == -1,"Dup2 error stderr");
+
+            switch (fork_session = fork()){
+                case -1 : {
+                    exit_if(1,"fork error");
+                }
+                break;
+                case 0 : { // Fils
+                    exit_if(setsid() == -1,"Truc de la session la ou j'ai rien compris mais jcrois ca marche");
+                }
+                break;
+                
+                default : { // Pere
+                    exit(0);
+                }
+                break;
+            }
+
+        }else printf("Error, syntax : server args\n  args are optionals [dem] \"Path to logfile\"\n");
+    }
+    else if (argc > 3) printf("Error, syntax : server args\n  args are optionals [dem] \"Path to logfile\"\n");
+
+
     struct client_list c_list;
     c_list.first_client  = NULL;
     c_list.nb_of_clients = 0;
@@ -30,7 +75,6 @@ int main(int argc, char **argv){
     int n;
     char buffer[100];
     while(1){
-        printf("Waiting for data ...\n");
         fflush(stdout);
         usleep(1000*200);
         while((n = read(fd, buffer, sizeof(buffer)-1)) > 0) {

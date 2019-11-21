@@ -223,7 +223,7 @@ void create_folder(char *path){
     if (access(path, F_OK)){ // Si le dossier n'existe pas
         exit_if(mkdir(path, 0770)==-1,"mkdir");
         #ifdef DEBUG
-            printf("DEBUG : fifo folder created : \"%s\"\n",path); 
+            printf("DEBUG : Folder created : \"%s\"\n",path); 
         #endif
     }
 }
