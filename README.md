@@ -12,21 +12,26 @@ WIP :
 TODO :
   - Print all users after connexion
 
+
 ## Server
 
-WIP : 
-  - Change client memory management : change from struct to linked list
+SOLVED :  
+  ~~- Change client memory management : change from struct to linked list~~
+  ~~- Suicide if empty (last client disco)~~
+
+WIP :
 
 TODO :
   - Make it a daemon
-  - Suicide if empty (last client disco)
   
 
 ## Both
 
-TODO :
+WIP :
   - Each sys call can return -1 and need 2 be tested.
   - Add commands (i.e nickname, dest (pid or nick))
+
+TODO :
   - Dynamic messge size
   - Add channels
 
