@@ -9,6 +9,7 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <string.h>
+#include <sched.h>
 
 #include <sys/stat.h>
 

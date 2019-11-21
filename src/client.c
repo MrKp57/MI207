@@ -2,7 +2,6 @@
 #ifndef _CLIENT
 #define _CLIENT
 #include "functions.h"
-#include <sched.h>
 
 /*
 int read_message(char *message){
