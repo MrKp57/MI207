@@ -7,9 +7,10 @@ SOLVED :
 
 WIP :
   - Ask client for nick at startup
+  - Lockfile to prevent 2 client for write at same time
     
 TODO :
-  - Lockfile to prevent 2 client for write at same time
+  - Print all users after connexion
 
 ## Server
 
