@@ -1,26 +1,46 @@
 Projet chat client serveur
 
-# Client
+## Client
+
+SOLVED : 
+  ~~- Le fork implique des soucis dans les getpid suivants et le ctrl c est capté par le fils et le pere~~
 
 WIP :
-  - Le fork implique des soucis dans les getpid suivants et le ctrl c est capté par le fils et le pere
-    
-TODO
-
   - Ask client for nick at startup
-
-# Server
-
-TODO
-  - Change client memory management : change from struct to linked list
-
+  - Lockfile to prevent 2 client for write at same time
+    
+TODO :
+  - Print all users after connexion
 
 
-# Both
+## Server
 
-TODO
+SOLVED :  
+  ~~- Change client memory management : change from struct to linked list~~
+  ~~- Suicide if empty (last client disco)~~
+
+WIP :
+
+TODO :
+  - Make it a daemon
+  
+
+## Both
+
+WIP :
   - Each sys call can return -1 and need 2 be tested.
   - Add commands (i.e nickname, dest (pid or nick))
 
-if (on a le temps) : TOTO
+TODO :
+  - Dynamic messge size
+  - Add channels
+
+if (on a le temps) : TOTO :
   - TCP/IP implement
+
+
+# Command protocol
+  - Identifier : '/'
+  - Command list :
+    - /who "List of connected users"
+    - /nick "Change my nickname to another free"
