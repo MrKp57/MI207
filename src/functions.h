@@ -27,13 +27,17 @@ static const char *signames[] = {
     "SIGXFSZ", "SIGVTALRM", "SIGPROF", "SIGWINCH", "SIGINFO", "SIGUSR1", "SIGUSR2",
 };
 
+struct client_list{
+    int nb_of_clients;
+    struct client *first_client;
+};
+
 struct client{
     int pid;
     char *nick;
     int fd;
+    struct client *next_client;
 };
-
-struct client c_list[MAX_CLIENTS];
 
 void send_disconnect();
 void send_hello(int fd);
@@ -41,13 +45,13 @@ const char *signame(int signal);
 void client_exit();
 void server_exit();
 void exit_if(int condition, const char *prefix);
-void rm_client(int c_pid);
-void print_c_array();
-int add_client(int c_pid); 
-int get_fd(int pid);
-void send_to_pid(int pid, char *buffer);
-void send_to_all_exept(char *buffer, int pid);
-void send_to_all(char *buffer);
+void rm_client(struct client_list *c_list, int c_pid);
+void print_c_list(struct client_list c_list);
+void add_client(struct client_list *c_list, int c_pid); 
+int get_fd(struct client_list c_list, int pid);
+void send_to_pid(struct client_list c_list, int pid, char *buffer);
+void send_to_all_exept(struct client_list c_list, char *buffer, int pid);
+void send_to_all(struct client_list c_list, char *buffer);
 void redirect_ctrl_c();
 
 void create_folder(char *path);

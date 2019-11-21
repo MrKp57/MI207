@@ -17,8 +17,6 @@ int read_message(char *message){
 
 
 int main(int argc, char **argv){
-
-    redirect_ctrl_c();
     
     if (access(MAIN_PIPE, F_OK)){ // Si le pipe 0 n'existe pas
         printf("Please launch server first !\n"); 
@@ -56,21 +54,27 @@ int main(int argc, char **argv){
 
         case 0: { // C'est le fils /!!\ NOUVEAU PID - Reader
 
+            redirect_ctrl_c();
+
             int my_fd = open(path_pid_pipe, O_RDONLY);
             exit_if(my_fd == -1, path_pid_pipe); // Open fifo file in read only
         
             int n;
-            char buffer[10000];
+            char buffer[100];
             while(1){
                 while((n = read(my_fd, buffer, sizeof(buffer)-1)) > 0) {
+                    
+                    printf("n = %d\n",n);
+
                     buffer[n] = 0;
+
                     #ifdef DEBUG
+
                         printf("\nDEBUG : Received %d bytes : \"%s\"\n",n ,buffer);
                         
                         printf("Hdbg : \n\"");
                         for(int g=0;g<20;g-=-1) printf("%c-",buffer[g]);
                         printf("\"\n");
-
 
                     #endif
 
@@ -96,13 +100,18 @@ int main(int argc, char **argv){
 
             char buffer_read[1];
             int read_rtn;
+
             while(1){
                 printf("%s",prompt);
                 fflush(stdout);
                 i=0;
                 do{
                     read_rtn = read(STDIN_FILENO, buffer_read, 1);
-                    exit_if(read_rtn==-1,"read");
+                    if(read_rtn==-1) {
+                        printf("read error\n");
+                        kill(fork_rtn,SIGINT);
+                        exit(EXIT_FAILURE);
+                    }
                     #ifdef DEBUG
                         printf("DEBUG : read : \"%c\"=%d read_rtn = %d\n",buffer_read[0],(int)buffer_read[0],read_rtn);
                     #endif
@@ -113,7 +122,12 @@ int main(int argc, char **argv){
                 
                 n = snprintf(message, sizeof(message),"%d,%lu,%s", getpid(), strlen(buffer), buffer);
                 if(i-1){
-                    write(fd, message, n);
+                    
+                    if(write(fd, message, n) ==-1) {
+                        printf("write error\n");
+                        kill(fork_rtn,SIGINT);
+                        exit(EXIT_FAILURE);
+                    }
 
                     #ifdef DEBUG
                         printf("DEBUG : %d bytes sent : \"%s\"\n",n,buffer);
