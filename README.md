@@ -15,7 +15,9 @@ TODO :
 
 TODO :
   - Change client memory management : change from struct to linked list
-
+  - Make it a daemon
+  - Suicide if empty (last client disco)
+  
 
 # Both
 
@@ -23,6 +25,7 @@ TODO :
   - Each sys call can return -1 and need 2 be tested.
   - Add commands (i.e nickname, dest (pid or nick))
   - Dynamic messge size
+  - Add channels
 
 if (on a le temps) : TOTO :
   - TCP/IP implement
