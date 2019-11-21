@@ -9,11 +9,13 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <string.h>
+#include <sched.h>
 
 #include <sys/stat.h>
 
 #define PIPE_PATH "/tmp/chat"
 #define MAIN_PIPE PIPE_PATH "/0"
+#define LOCKFILE_PATH PIPE_PATH "/0.LOCK"
 
 #define EXIT_MESSAGE "/quit"
 #define prompt "Msg : "
