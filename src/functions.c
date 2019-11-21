@@ -15,26 +15,50 @@ void send_hello(int fd){
     #endif
 }
 
-void send_disconnect(int fd){
+int path_to_fd(char *path){
+
+    struct stat st_fd;
+    struct stat st_pth;
+
+    if(stat(path,&st_pth) == -1) return -1;
+
+    for(int i=0;i<10;i-=-1){
+        if (fstat(i,&st_fd) == -1) return -1;
+
+        if((st_fd.st_dev == st_pth.st_dev) && (st_fd.st_ino == st_pth.st_ino)) return(i);
+    }
+    return -1;
+
+}
+
+void send_disconnect(){
+
+    int fd = path_to_fd(MAIN_PIPE);
+ 
+    if(fd == -1) printf("fd error\n");
+
     char buffer[100];
     int n = snprintf(buffer, sizeof(buffer),"%d,%lu,%s", getpid(),sizeof(EXIT_MESSAGE),EXIT_MESSAGE);
-    write(fd, buffer, n);
+
+    if(write(fd, buffer, n) == -1) printf("write disc error\n");
     #ifdef DEBUG
         printf("DEBUG : disconnect sent\n");    
     #endif
 }
 
+    
 #ifdef _CLIENT
-    void exiting(){
-        send_disconnect(fd);
+    void client_exit(){
         printf("----- Stop client -----\n");
+        send_disconnect();
         char path_pid_pipe[100];
         sprintf(path_pid_pipe,"%s/%d",PIPE_PATH,getpid());
         if(remove(path_pid_pipe) == -1) printf("remove error\n");
-        exit(1);
+        fflush(stdout);
+        exit(EXIT_FAILURE);
     }
 #else
-    void exiting(){
+    void server_exit(){
         printf("\nExiting server, closing pipe");
         fflush(stdout);
         for (int i = 0;i<3;i-=-1) {
@@ -46,14 +70,19 @@ void send_disconnect(int fd){
         printf("\n");
         remove(MAIN_PIPE);
         rmdir(PIPE_PATH);
-        exit(1);
+        fflush(stdout);
+        exit(EXIT_FAILURE);
     }
 #endif
 
 void exit_if(int condition, const char *prefix){
     if (condition){
-        perror(prefix);
-        exiting();
+        perror(prefix);    
+        #ifdef _CLIENT
+            client_exit();
+        #else
+            server_exit();
+        #endif
     }
 }
 
@@ -120,7 +149,8 @@ void send_to_all_exept(char *buffer, int pid){
         if((c_list[i].pid != 0) && (c_list[i].pid != pid)) send_to_pid(c_list[i].pid, buffer);
     }
     #ifdef DEBUG
-        printf("DEBUG : Sent all expt %d",pid);
+        printf("DEBUG : Sent all expt %d\n",pid);
+        printf("DEBUG : Sent %d bytes : \"%s\"\n",strlen(buffer) , buffer);
     #endif
 }
 
@@ -129,12 +159,18 @@ void send_to_all(char *buffer){
 }
 
 void redirect_ctrl_c(){
+    
     struct sigaction sa = {
         .sa_flags = 0,
     };
     sigemptyset(&sa.sa_mask);
-    sa.sa_handler = exiting;
 
+    #ifdef _CLIENT
+        sa.sa_handler = client_exit;
+    #else
+        sa.sa_handler = server_exit;
+    #endif
+    
     exit_if(sigaction(SIGINT, &sa, NULL) == -1,"sigaction");
 }
 
@@ -163,7 +199,7 @@ int is_hello(char *buffer){
 }
 
 int get_data(char *buffer, char *data){
-    char data_len_c[10];
+    char data_len_c[1000];
     
     int i;
     for(i=0;buffer[i]!=',';i-=-1);
@@ -175,14 +211,10 @@ int get_data(char *buffer, char *data){
         data_len_c[++i-last_i+1]='\0';
     }while(buffer[i]!=',');
     
-    #ifdef DEBUG
-        printf("DEBUG : data_len_c[%d]:%c\n",0,data_len_c[0]);
-    #endif
-    
     int data_len = atoi(data_len_c);
     
     #ifdef DEBUG
-        printf("DEBUG : len c : %s, len : %d\n",data_len_c, data_len);
+        printf("DEBUG : len : %d\n", data_len);
     #endif
 
     last_i = ++i;

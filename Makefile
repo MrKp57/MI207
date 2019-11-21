@@ -12,7 +12,7 @@ LIB_SRC	= $(SRCDIR)/functions.c
 
 LIB_OBJ_C	= $(OBJDIR)/lib_c.o
 LIB_OBJ_S	= $(OBJDIR)/lib_s.o
-LIB_OBJ_C_D	= $(OBJDIR)/lib_c.o
+LIB_OBJ_C_D	= $(OBJDIR_D)/lib_c.o
 LIB_OBJ_S_D	= $(OBJDIR_D)/lib_s.o
 
 # Server targets
@@ -45,15 +45,36 @@ OUT_D	= $(CLT_OUT_D) $(SRV_OUT_D)
 CC 		= gcc
 CC_D    = $(CC) -D DEBUG
 
+MKDIR_P = mkdir -p
+
 FLAGS	= -g -c -Wall
 
 # Target rules
 
-all: $(CLT_OUT) $(SRV_OUT) $(CLT_OUT_D) $(SRV_OUT_D)
+all: debug release
 
-debug: $(CLT_OUT_D) $(SRV_OUT_D)
+force: clean all
 
-release: $(CLT_OUT) $(SRV_OUT)
+debug: d_dir $(CLT_OUT_D) $(SRV_OUT_D)
+
+release: r_dir $(CLT_OUT) $(SRV_OUT)
+
+# Folder tree creation
+
+r_dir: ${OBJDIR} ${BINDIR}
+d_dir: ${OBJDIR_D} ${BINDIR_D}
+
+${OBJDIR}:
+	${MKDIR_P} ${OBJDIR}
+
+${BINDIR}:
+	${MKDIR_P} ${BINDIR}
+
+${OBJDIR_D}:
+	${MKDIR_P} ${OBJDIR_D}
+
+${BINDIR_D}:
+	${MKDIR_P} ${BINDIR_D}
 
 # DEBUG COMPILING
 
@@ -95,7 +116,7 @@ $(LIB_OBJ_C): $(LIB_SRC)
 $(LIB_OBJ_S): $(LIB_SRC)
 	$(CC) -D _SERVER $(FLAGS) $(LIB_SRC) -o $(LIB_OBJ_S)
 
-# Clean rules
+# Clean rule
 
 clean:
-	rm -f $(OBJS) $(OUT) $(OBJS_D) $(OUT_D)
+	rm -rf bin obj

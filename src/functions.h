@@ -1,6 +1,8 @@
 #ifndef _FUNCTS
 #define _FUNCTS
 
+#define _GNU_SOURCE
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -33,16 +35,11 @@ struct client{
 
 struct client c_list[MAX_CLIENTS];
 
-void send_disconnect(int fd);
+void send_disconnect();
 void send_hello(int fd);
 const char *signame(int signal);
-
-#ifdef _CLIENT
-    void exiting(int fd);
-#else
-    void exiting();
-#endif
-
+void client_exit();
+void server_exit();
 void exit_if(int condition, const char *prefix);
 void rm_client(int c_pid);
 void print_c_array();
@@ -52,6 +49,7 @@ void send_to_pid(int pid, char *buffer);
 void send_to_all_exept(char *buffer, int pid);
 void send_to_all(char *buffer);
 void redirect_ctrl_c();
+
 void create_folder(char *path);
 int get_pid(char *buffer);
 int is_hello(char *buffer);

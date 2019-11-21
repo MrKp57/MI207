@@ -1,4 +1,5 @@
 
+#ifndef _CLIENT
 #define _CLIENT
 #include "functions.h"
 
@@ -14,21 +15,14 @@ int read_message(char *message){
 }
 */
 
+
 int main(int argc, char **argv){
-    printf("----- Start client:%d -----\n",getpid());
 
-    struct sigaction sa = {
-        .sa_flags = 0,
-    };
-
-    sigemptyset(&sa.sa_mask);
-    sa.sa_handler = exiting;
-
-    exit_if(sigaction(SIGINT, &sa, NULL) == -1,"sigaction");
+    redirect_ctrl_c();
     
     if (access(MAIN_PIPE, F_OK)){ // Si le pipe 0 n'existe pas
         printf("Please launch server first !\n"); 
-        exiting(0);
+        client_exit();
     }
 
     int fd = open(MAIN_PIPE, O_WRONLY);
@@ -47,8 +41,6 @@ int main(int argc, char **argv){
     #endif
     exit_if(mkfifo(path_pid_pipe, 0666)==-1,"mkfifo"); // Create pid chat file
 
-    int my_fd = open(path_pid_pipe, O_RDONLY);
-    exit_if(my_fd == -1, path_pid_pipe); // Open fifo file in read only
 
     #ifdef DEBUG
         printf("DEBUG : fifo file opened\n");    
@@ -57,34 +49,45 @@ int main(int argc, char **argv){
     int fork_rtn;
 
     switch (fork_rtn = fork()){
-        case 0: { // C'est le fils - Reader
+        case -1: {
+            exit_if(1,"fork");
+        }
+        break;
+
+        case 0: { // C'est le fils /!!\ NOUVEAU PID - Reader
+
+            int my_fd = open(path_pid_pipe, O_RDONLY);
+            exit_if(my_fd == -1, path_pid_pipe); // Open fifo file in read only
         
             int n;
-            char buffer[100];
+            char buffer[10000];
             while(1){
                 while((n = read(my_fd, buffer, sizeof(buffer)-1)) > 0) {
                     buffer[n] = 0;
                     #ifdef DEBUG
-                        printf("DEBUG : Received %d bytes : \"%s\"\n",n , buffer);
+                        printf("\nDEBUG : Received %d bytes : \"%s\"\n",n ,buffer);
+                        
+                        printf("Hdbg : \n\"");
+                        for(int g=0;g<20;g-=-1) printf("%c-",buffer[g]);
+                        printf("\"\n");
+
+
                     #endif
 
                     //// Pid calculation
                     int rmt_pid = get_pid(buffer); // Pid calculation
 
-                    //// Len calculation
-                    char data_c[100];
+                    //// Len & Data calculation
+                    char data_c[10000];
                     int data_len = get_data(buffer, data_c);
                     
-                    printf("\n// Data received ! \\\\\n   From pid = %d\n   Data_len = %d\n   Data = \"%s\"\n\\\\ End of data //\n",rmt_pid, data_len,data_c);
+                    printf("\n\n// Data received ! \\\\\n   From pid = %d\n   Data_len = %d\n   Data = \"%s\"\n\\\\ End of data //\n",rmt_pid, data_len,data_c);
                     printf("%s",prompt);
                     fflush(stdout);
                 }
             }
         }    
         break;
-        case -1: {
-            exit_if(1,"fork");
-        }
         default: { // C'est le papa - Sender
             char message[100];
             char buffer[100];
@@ -125,3 +128,5 @@ int main(int argc, char **argv){
     return 0;
 
 }
+
+#endif

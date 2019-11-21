@@ -1,4 +1,5 @@
 
+#ifndef _SERVER
 #define _SERVER
 #include "functions.h"
 
@@ -62,3 +63,5 @@ int main(int argc, char **argv){
     }
     return 0;
 }
+
+#endif
