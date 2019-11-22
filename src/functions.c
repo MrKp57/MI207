@@ -373,7 +373,7 @@ int is_hello(char *buffer){
     return buffer[i+1]==48;
 }
 
-int get_data(char *buffer, char *data){
+int get_data(char *buffer, char **data_out){
     char data_len_c[100];
     
     int i;
@@ -394,10 +394,14 @@ int get_data(char *buffer, char *data){
 
     last_i = ++i;
 
+    char *data = malloc(data_len);
+
     do{
         data[i-last_i]=buffer[i];
         data[++i-last_i+1]='\0';
     }while(i != last_i+data_len);
+
+    *data_out = data;
 
     return data_len;
 }

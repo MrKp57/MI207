@@ -40,10 +40,10 @@ int main(int argc, char **argv){
         printf("DEBUG : fifo file opened\n");    
     #endif
 
-    char cmd[100] = {0};
-    int n = snprintf(cmd, sizeof(cmd),"%d,%lu,%s", getpid(), strlen(cmd), "/who");
+    // char cmd[100] = {0};
+    // int n = snprintf(cmd, sizeof(cmd),"%d,%lu,%s", getpid(), strlen("/who"), "/who");
 
-    send_to_server(srv_fd, cmd, n);
+    // send_to_server(srv_fd, cmd, n);
     
     int fork_rtn;
 
@@ -97,6 +97,8 @@ int main(int argc, char **argv){
             }
         }    
         break;
+
+
         default: { // C'est le papa - Sender
 
             char buffer_nickname[MAX_NICK_SIZE];

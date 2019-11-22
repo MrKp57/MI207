@@ -69,6 +69,7 @@ void lockfile_protect();
 void create_folder(char *path);
 int get_pid(char *buffer);
 int is_hello(char *buffer);
-int get_data(char *buffer, char *data);
+int get_data(char *buffer, char **data);
 
 #endif
+

@@ -85,8 +85,9 @@ int main(int argc, char **argv){
             if(is_hello(buffer)) add_client(&c_list,rmt_pid); // HELLO RECEIVED
             else { // if is data
 
-                char data_c[100];
-                int data_len = get_data(buffer, data_c);
+                char *data_c = NULL;
+
+                int data_len = get_data(buffer, &data_c);
 
                 printf("// Data received ! \\\\\n   From pid = %d\n   Data_len = %d\n   Data = \"%s\"\n\\\\ End of data //\n",rmt_pid, data_len,data_c);
 
@@ -96,7 +97,7 @@ int main(int argc, char **argv){
                 }
                 else {
                     printf("sending to all expt %d\n",rmt_pid);
-                    send_to_all_exept(c_list, buffer, rmt_pid);
+                    send_to_all_exept(c_list, buffer, rmt_pid); // par ici
                 }
                 
 
