@@ -21,11 +21,12 @@ TODO :
 SOLVED :  
   ~~- Change client memory management : change from struct to linked list~~
   ~~- Suicide if empty (last client disco)~~
+  ~~- Make it a daemon~~
 
 WIP :
+  - handle commands (/who, /nick)
 
 TODO :
-  - Make it a daemon
   
 
 ## Both
