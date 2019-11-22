@@ -23,9 +23,6 @@ int main(int argc, char **argv){
 
             exit_if(log_fd == -1, "open logfile");
 
-            printf("%s = %d\n",log_fname, log_fd);
-            exit_if(write(log_fd,"coucou",6) == -1,"write");
-
             exit_if(dup2(log_fd,STDOUT_FILENO) == -1,"Dup2 error stdout");
             exit_if(dup2(log_fd,STDERR_FILENO) == -1,"Dup2 error stderr");
 

@@ -2,12 +2,15 @@ Projet chat client serveur
 
 ## Client
 
+KNOWN BUGS :
+  - When ctrl-c, if father kill himself first, son cannot remove ppid pipe :/
+
 SOLVED : 
   ~~- Le fork implique des soucis dans les getpid suivants et le ctrl c est capté par le fils et le pere~~
+  ~~- Ask client for nick at startup~~
+  ~~- Lockfile to prevent 2 client for write at same time~~
 
 WIP :
-  - Ask client for nick at startup
-  - Lockfile to prevent 2 client for write at same time
     
 TODO :
   - Print all users after connexion

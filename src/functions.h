@@ -17,10 +17,10 @@
 #define MAIN_PIPE PIPE_PATH "/0"
 #define LOCKFILE_PATH PIPE_PATH "/0.LOCK"
 
+#define MAX_NICK_SIZE 20
+
 #define EXIT_MESSAGE "/quit"
 #define prompt "Msg : "
-
-#define MAX_CLIENTS 100
 
 #define LOG_PATH "/tmp/chat.log"
 #define SERV_DAEMON_LOGFILE_PATH LOG_PATH "/srv_dem.log"
@@ -53,12 +53,18 @@ void server_exit();
 void exit_if(int condition, const char *prefix);
 void rm_client(struct client_list *c_list, int c_pid);
 void print_c_list(struct client_list c_list);
+int key_input(char **out_str);
+void launch_serv_if_abs();
+int choose_nick(char *buffer_nickname);
 void add_client(struct client_list *c_list, int c_pid); 
 int get_fd(struct client_list c_list, int pid);
 void send_to_pid(struct client_list c_list, int pid, char *buffer);
 void send_to_all_exept(struct client_list c_list, char *buffer, int pid);
 void send_to_all(struct client_list c_list, char *buffer);
 void redirect_ctrl_c();
+
+void send_to_server(int fd, char* message, int n);
+void lockfile_protect();
 
 void create_folder(char *path);
 int get_pid(char *buffer);
