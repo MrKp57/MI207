@@ -112,41 +112,6 @@ int main(int argc, char **argv){
                 send_to_all_exept(c_list, rec_msg, rmt_pid); // par ici
             }
         }
-
-
-
-
-        /*
-        while((n = read(fd_srv, buffer, sizeof(buffer)-1)) > 0) {
-            buffer[n] = 0;
-            #ifdef DEBUG
-                printf("DEBUG : Received %d bytes : \"%s\"\n",n , buffer);
-            #endif
-
-            int rmt_pid = get_pid(buffer); // Pid calculation
-            
-            if(is_hello(buffer)) add_client(&c_list,rmt_pid); // HELLO RECEIVED
-            else { // if is data
-
-                char *data_c = NULL;
-
-                int data_len = get_data(buffer, &data_c);
-
-                printf("// Data received ! \\\\\n   From pid = %d\n   Data_len = %d\n   Data = \"%s\"\n\\\\ End of data //\n",rmt_pid, data_len,data_c);
-
-                if(!strcmp(data_c,EXIT_MESSAGE)){ // Disconect message
-                    printf("Client %d disconnected!\n",rmt_pid);
-                    rm_client(&c_list, rmt_pid);
-                }
-                else {
-                    printf("sending to all expt %d\n",rmt_pid);
-                    send_to_all_exept(c_list, buffer, rmt_pid); // par ici
-                }
-                
-
-            }
-        }
-        */
     }
     return 0;
 }

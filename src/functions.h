@@ -49,6 +49,7 @@ void send_disconnect();
 int send_hello(int fd);
 const char *signame(int signal);
 void client_exit();
+void client_exit_wait();
 void server_exit();
 void exit_if(int condition, const char *prefix);
 void rm_client(struct client_list *c_list, int c_pid);

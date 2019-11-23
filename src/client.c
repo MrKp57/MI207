@@ -111,6 +111,8 @@ int main(int argc, char **argv){
             int len;
 
             while(1){
+                redirect_ctrl_c_wait();
+
                 printf("%s",prompt);
                 fflush(stdout);
 

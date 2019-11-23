@@ -83,7 +83,11 @@ int data_input(int in_fd, char **out_str){
     do{
         read_bytes = read(in_fd, buffer, bloc_size);
         if(read_bytes == -1) return -1;
+        printf("rb = %d \n",read_bytes);
+
+        for(int y=0;y<read_bytes;y++) printf("c(%d) = '%c':%d\n",y,buffer[y],(int)buffer[y]);
         len += read_bytes;
+
 
         if(*(buffer+read_bytes-1) == 10) {
             *(buffer+read_bytes-1) = '\0';
@@ -109,8 +113,7 @@ int data_input(int in_fd, char **out_str){
             free(prev_final);
             free(buffer);
             return(len);
-        }
-        
+        }   
     }while(read_bytes > 0);
 }
 
@@ -151,7 +154,7 @@ void send_disconnect(){
     char buffer[100];
     int n = snprintf(buffer, sizeof(buffer),"%d,%lu,%s", getppid(),sizeof(EXIT_MESSAGE),EXIT_MESSAGE);
 
-    if(write(fd, buffer, n) == -1) printf("write disc error\n");
+    if(send_to_server(fd, buffer, n) == -1) printf("write disc error\n");
     #ifdef DEBUG
         printf("DEBUG : disconnect sent\n");    
     #endif
@@ -170,6 +173,9 @@ void send_disconnect(){
         if(remove(path_pid_pipe) == -1) printf("remove error\n");
         fflush(stdout);
         exit(EXIT_FAILURE);
+    }
+    void client_exit_wait(){
+        exit_if(wait(NULL)==-1,"Wait");
     }
 #else
     void server_exit(){
@@ -206,13 +212,18 @@ void exit_if(int condition, const char *prefix){
         
         struct client *c_tmp = c_list->first_client;
         struct client *prev_c_tmp = malloc(sizeof(struct client));
+        
         exit_if(prev_c_tmp == NULL, "malloc failed");
 
-        for (int i=0;c_tmp->next_client != NULL;i-=-1){
+        printf("I go there 0\n");
+
+        int i=0;
+
+        do{
             if(c_tmp->pid == c_pid){
                 exit_if(close(c_tmp->fd) == -1,"close fd"); // On ferme le fd
 
-                printf("I go there 1\n");
+                printf("I go there 1 %d\n",i);
             
                 if(!i) {
                     c_list->first_client = c_tmp->next_client; // si c'est le premier client
@@ -222,18 +233,20 @@ void exit_if(int condition, const char *prefix){
                     prev_c_tmp->next_client = c_tmp->next_client; // Le client suivant du client précédent n'est plus nous ;(
                     printf("I go there 3\n");
                 }
+
                 free(c_tmp); // On libère la ram allouée au client
                 
                 c_list->nb_of_clients+=-1;
 
-                print_c_list(*c_list);
                 if(!c_list->nb_of_clients) server_exit();
-                return;
+
+                print_c_list(*c_list);
             }
 
             prev_c_tmp = c_tmp;
             c_tmp = c_tmp->next_client;
-        }
+            i-=-1;
+        }while(c_tmp->next_client != NULL);
     }
 
 #endif
@@ -336,6 +349,20 @@ void redirect_ctrl_c(){
     
     exit_if(sigaction(SIGINT, &sa, NULL) == -1,"sigaction");
 }
+
+#ifdef _CLIENT
+    void redirect_ctrl_c_wait(){
+        
+        struct sigaction sa = {
+            .sa_flags = 0,
+        };
+        sigemptyset(&sa.sa_mask);
+
+        sa.sa_handler = client_exit_wait;
+        
+        exit_if(sigaction(SIGINT, &sa, NULL) == -1,"sigaction");
+    }
+#endif
 
 void create_folder(char *path){
     if (access(path, F_OK)){ // Si le dossier n'existe pas
