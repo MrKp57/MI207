@@ -46,14 +46,14 @@ struct client{
 };
 
 void send_disconnect();
-void send_hello(int fd);
+int send_hello(int fd);
 const char *signame(int signal);
 void client_exit();
 void server_exit();
 void exit_if(int condition, const char *prefix);
 void rm_client(struct client_list *c_list, int c_pid);
 void print_c_list(struct client_list c_list);
-int key_input(char **out_str);
+int data_input(int in_fd, char **out_str);
 void launch_serv_if_abs();
 int choose_nick(char *buffer_nickname);
 void add_client(struct client_list *c_list, int c_pid); 
@@ -63,7 +63,7 @@ void send_to_all_exept(struct client_list c_list, char *buffer, int pid);
 void send_to_all(struct client_list c_list, char *buffer);
 void redirect_ctrl_c();
 
-void send_to_server(int fd, char* message, int n);
+int send_to_server(int fd, char* message, int n);
 void lockfile_protect();
 
 void create_folder(char *path);

@@ -68,7 +68,7 @@ int choose_nick(char *buffer_nickname){
     return nick_size;
 }
 
-int key_input(char **out_str){
+int data_input(int in_fd, char **out_str){
     const int bloc_size = 200;
     
     char *final      = NULL;
@@ -81,7 +81,7 @@ int key_input(char **out_str){
     int stop = 0;
 
     do{
-        read_bytes = read(STDIN_FILENO, buffer, bloc_size);
+        read_bytes = read(in_fd, buffer, bloc_size);
         if(read_bytes == -1) return -1;
         len += read_bytes;
 
@@ -114,13 +114,16 @@ int key_input(char **out_str){
     }while(read_bytes > 0);
 }
 
-void send_hello(int fd){
+int send_hello(int fd){
     char buffer[100];
     int n = snprintf(buffer, sizeof(buffer),"%d,0", getpid());
-    write(fd, buffer, n);
+    int rtn_val = send_to_server(fd,buffer,n);
+
     #ifdef DEBUG
         printf("DEBUG : hello sent\n");    
     #endif
+
+    return rtn_val;
 }
 
 int path_to_fd(char *path){
@@ -241,11 +244,13 @@ void print_c_list(struct client_list c_list){
     printf("First one at %p\n",c_list.first_client);
     
     struct client *c_tmp = c_list.first_client;
-
-    for(int i = 0;c_tmp->next_client != NULL;i-=-1){
+    
+    int i = 0;
+    do{
         printf("Client - %d\n  fd - %d\n  pid - %d\n  nick - \"%s\"\n  next - \"%p\"\n",i,c_tmp->fd,c_tmp->pid,c_tmp->nick,c_tmp->next_client);
-        c_tmp = c_tmp->next_client;
-    }
+        if(c_tmp->next_client != NULL) c_tmp = c_tmp->next_client;
+        i++;
+    }while(c_tmp->next_client != NULL);
 }
 
 void add_client(struct client_list *c_list, int c_pid){
@@ -352,10 +357,15 @@ void lockfile_protect() {
 
 }
 
-void send_to_server(int fd, char* message, int n) {
+int send_to_server(int fd, char* message, int n) {
     lockfile_protect();
-    write(fd, message, n);
+    *(message+n) = 10;
+    
+    int rtn_val = write(fd, message, n+1);
+
     remove(LOCKFILE_PATH);
+    
+    return rtn_val;
 }
 
 int get_pid(char *buffer){

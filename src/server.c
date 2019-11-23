@@ -60,21 +60,64 @@ int main(int argc, char **argv){
     exit_if(mkfifo(MAIN_PIPE, 0666)==-1,"mkfifo"); // Create fifo file
     
     #ifdef DEBUG
-        printf("DEBUG : fifo file created\n"); 
+        printf("DEBUG : fifo file created\n");
     #endif
 
-    int fd = open(MAIN_PIPE, O_RDONLY); exit_if(fd == -1, MAIN_PIPE); // Open fifo file in read only
+    int fd_srv = open(MAIN_PIPE, O_RDONLY);
+    exit_if(fd_srv == -1, MAIN_PIPE); // Open fifo file in read only
 
     #ifdef DEBUG
-        printf("DEBUG : fifo file opened\n");    
+        printf("DEBUG : fifo file opened\n");
     #endif
 
-    int n;
-    char buffer[100];
+    int rmt_pid  = 0;
+    int data_len = 0;
+
+    char *rec_msg = NULL;
+    char *data_c  = NULL;
+
+
     while(1){
-        fflush(stdout);
-        usleep(1000*200);
-        while((n = read(fd, buffer, sizeof(buffer)-1)) > 0) {
+        //fflush(stdout);
+        //usleep(1000*200);
+        #ifdef DEBUG
+            printf("DEBUG : waiting for message\n");
+        #endif
+        
+        data_len = data_input(fd_srv, &rec_msg); // Blocking read function
+
+        #ifdef DEBUG
+            printf("DEBUG : Received %d bytes : \"%s\"\n",data_len , rec_msg);
+        #endif
+
+        // Processing message from pipe
+
+        rmt_pid = get_pid(rec_msg); // Pid calculation
+
+        if(is_hello(rec_msg))
+            add_client(&c_list,rmt_pid); // HELLO RECEIVED
+
+        else { // if is data
+            data_len = get_data(rec_msg, &data_c); // Data parsing
+            
+            printf("// Data received ! \\\\\n   From pid = %d\n   Data_len = %d\n   Data = \"%s\"\n\\\\ End of data //\n",rmt_pid, data_len,data_c);
+            
+            if(!strcmp(data_c,EXIT_MESSAGE)){ // Disconect message
+                printf("Client %d disconnected!\n",rmt_pid);
+                rm_client(&c_list, rmt_pid);
+            }
+
+            else {
+                printf("sending to all expt %d\n",rmt_pid);
+                send_to_all_exept(c_list, rec_msg, rmt_pid); // par ici
+            }
+        }
+
+
+
+
+        /*
+        while((n = read(fd_srv, buffer, sizeof(buffer)-1)) > 0) {
             buffer[n] = 0;
             #ifdef DEBUG
                 printf("DEBUG : Received %d bytes : \"%s\"\n",n , buffer);
@@ -103,6 +146,7 @@ int main(int argc, char **argv){
 
             }
         }
+        */
     }
     return 0;
 }

@@ -114,7 +114,7 @@ int main(int argc, char **argv){
                 printf("%s",prompt);
                 fflush(stdout);
 
-                len = key_input(&buffer);
+                len = data_input(STDIN_FILENO, &buffer); // Blocking read function
                 
                 if(len==-1) {
                     printf("Keyboard error\n");
@@ -125,12 +125,17 @@ int main(int argc, char **argv){
                 int msg_size = strlen(buffer)+100; // Will be enough
 
                 message = malloc(msg_size);
-                exit_if(message == NULL, "malloc failed");
-            
+                if(message==NULL) {
+                    printf("malloc failed\n");
+                    kill(fork_rtn,SIGINT);
+                    exit(EXIT_FAILURE);
+                }
+
                 n = snprintf(message, msg_size,"%d,%lu,%s", getpid(), strlen(buffer), buffer);
-                
+                                
                 if(len-1){
-                    if(write(srv_fd, message, n) ==-1) {
+                    
+                    if(send_to_server(srv_fd, message, n) ==-1) {
                         printf("write error\n");
                         kill(fork_rtn,SIGINT);
                         exit(EXIT_FAILURE);
