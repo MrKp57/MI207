@@ -16,6 +16,7 @@ int main(int argc, char **argv){
             memcpy(path, log_fname, i);
 
             create_folder(path);
+            free(path);
             
             int fork_session;
 
@@ -74,19 +75,12 @@ int main(int argc, char **argv){
     int data_len   = 0;
     int msg_len    = 0;
 
-
-    int already_used; 
-
-
     char *rec_msg  = NULL;
     char *data_c   = NULL;
     char *cmd      = NULL;
     char *cmd_args = NULL;
     
-
     while(1){
-        //fflush(stdout);
-        //usleep(1000*200);
         #ifdef DEBUG
             printf("DEBUG : waiting for message\n");
         #endif
@@ -129,15 +123,15 @@ int main(int argc, char **argv){
                     list_of_clients(c_list, &nick);
 
                     char buf[100];
-                    sprintf(buf,"%d,%d,%s",0,strlen(nick),nick);
+                    sprintf(buf,"%d,%lu,%s",0,strlen(nick),nick);
                     send_to_pid(c_list,rmt_pid, buf);
 
                 }
                 else if(!strcmp(cmd,"/nick")){
                     if(set_nickname_to(c_list, rmt_pid, cmd_args)){
-                        char buf[100];
+                        char buf[110];
                         char msg[100] = "This nickname is already in use, please choose another (check with /who)";
-                        sprintf(buf,"%d,%d,%s",0,strlen(msg),msg);
+                        sprintf(buf,"%d,%lu,%s",0,strlen(msg),msg);
                         send_to_pid(c_list,rmt_pid, buf);
                     }
                 }
@@ -151,6 +145,10 @@ int main(int argc, char **argv){
                 send_to_all_exept(c_list, rec_msg, rmt_pid);
             }
         }
+        free(rec_msg);
+        free(data_c);
+        free(cmd);
+        free(cmd_args);
     }
     return 0;
 }

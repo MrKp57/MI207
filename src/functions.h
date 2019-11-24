@@ -12,6 +12,7 @@
 #include <sched.h>
 
 #include <sys/stat.h>
+#include <sys/wait.h>
 
 #define PIPE_PATH "/tmp/chat"
 #define MAIN_PIPE PIPE_PATH "/0"
@@ -64,6 +65,7 @@ void send_to_pid(struct client_list c_list, int pid, char *buffer);
 void send_to_all_exept(struct client_list c_list, char *buffer, int pid);
 void send_to_all(struct client_list c_list, char *buffer);
 void redirect_ctrl_c();
+void redirect_ctrl_c_wait();
 
 int send_to_server(int fd, char* message, int n);
 void lockfile_protect();

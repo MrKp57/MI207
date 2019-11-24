@@ -49,6 +49,7 @@ int choose_nick(char *buffer_nickname){
     fflush(stdout);
     do{
         nick_size = read(STDIN_FILENO, buffer_nickname, MAX_NICK_SIZE*10);
+        if(nick_size == -1) return -1;
         if(nick_size>MAX_NICK_SIZE+1) {
             printf("Please choose another nick (max len = %d) : ",MAX_NICK_SIZE);
             fflush(stdout);
@@ -59,10 +60,10 @@ int choose_nick(char *buffer_nickname){
         }
     }while(nick_size>MAX_NICK_SIZE+1);
 
-    buffer_nickname[nick_size-1] = NULL;
+    buffer_nickname[nick_size-1] = '\0';
 
     #ifdef DEBUG
-        printf("DEBUG : nickname is %s, size=%d\n", buffer_nickname, strlen(buffer_nickname));
+        printf("DEBUG : nickname is %s, size=%lu\n", buffer_nickname, strlen(buffer_nickname));
     #endif
 
     return nick_size;
@@ -114,6 +115,7 @@ int data_input_key(char **out_str){
             return(len);
         }   
     }while(read_bytes > 0);
+    return 0;
 }
 
 int pipe_input(int in_fd, char **out_str){
@@ -122,6 +124,10 @@ int pipe_input(int in_fd, char **out_str){
     char *final      = NULL;
     char *prev_final = NULL;
     char *buffer     = calloc(bloc_size+1,1);
+    if(buffer == NULL){
+        perror("calloc failed");
+        exit(EXIT_FAILURE);
+    }
 
     int read_bytes = 0;
     int len = 0;
@@ -156,12 +162,12 @@ int pipe_input(int in_fd, char **out_str){
             return len;
         }   
     }while(read_bytes == bloc_size);
+    return 0;
 }
 
 int is_disconnect(char *data_c){
     return !strcmp(data_c,EXIT_MESSAGE);
 }
-
 
 int set_nickname_to(struct client_list c_list, int pid, char *nickname){
     // ret 1 on err
@@ -189,8 +195,9 @@ int set_nickname_to(struct client_list c_list, int pid, char *nickname){
 
 void list_of_clients(struct client_list c_list, char **nicknames){
 
-    char *nicks = NULL;
-    int size = 0;
+    char *nicks      = NULL;
+    char *last_nicks = NULL;
+    int size         = 0;
 
     struct client *c_tmp = c_list.first_client;
     for(int i=0;i<c_list.nb_of_clients;i-=-1){
@@ -199,11 +206,13 @@ void list_of_clients(struct client_list c_list, char **nicknames){
     }
 
     nicks = calloc(size+1,1);
+    last_nicks = nicks;
 
     c_tmp = c_list.first_client;
     
     for(int i=0;i<c_list.nb_of_clients;i-=-1){
-        sprintf(nicks,"%s%s,",nicks,c_tmp->nick);
+        sprintf(nicks,"%s%s - ",last_nicks,c_tmp->nick);
+        last_nicks = nicks;
         c_tmp = c_tmp->next_client;
     }
 
@@ -236,6 +245,9 @@ int is_command(int len, char *data_c, char **command, char **cmd_args){
 
         *command = cmd;
         *cmd_args = args;
+
+        free(cmd);
+        free(args);
 
         if(arg_ok) *cmd_args = args;
         else *cmd_args = NULL;
@@ -472,7 +484,7 @@ void redirect_ctrl_c(){
     exit_if(sigaction(SIGINT, &sa, NULL) == -1,"sigaction");
 }
 
-#ifdef _CLIENT
+#ifndef _SERVER
     void redirect_ctrl_c_wait(){
         
         struct sigaction sa = {

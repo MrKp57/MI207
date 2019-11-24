@@ -3,17 +3,6 @@
 #define _CLIENT
 #include "functions.h"
 
-/*
-int read_message(char *message){
-    int n;
-
-    do{
-        n = read(STDIN_FILENO, message, 1);
-        exit_if(n==-1,"read");
-        message[n]
-    }while(message[i] != 10);
-}*/
-
 int main(int argc, char **argv){
     
     launch_serv_if_abs();
@@ -82,6 +71,9 @@ int main(int argc, char **argv){
                 printf("\n\n// Data received ! \\\\\n   From pid = %d\n   Data_len = %d\n   Data = \"%s\"\n\\\\ End of data //\n",rmt_pid, data_len,data_c);
                 printf("%s",prompt);
 
+                free(rec_msg);
+                free(data_c);
+
                 fflush(stdout);
             
             }
@@ -93,10 +85,15 @@ int main(int argc, char **argv){
 
             char buffer_nickname[MAX_NICK_SIZE];
             int nick_size = choose_nick(buffer_nickname);
+            while(!nick_size){
+                printf("Nickname cannot be empty");
+                nick_size = choose_nick(buffer_nickname);
+            }
 
             char buffer_sd_n[100];
             int n = snprintf(buffer_sd_n, sizeof(buffer_sd_n),"%d,%d,/nick %s", getpid(), nick_size+6, buffer_nickname);
             int rtn_val = send_to_server(srv_fd,buffer_sd_n,n);
+            exit_if(rtn_val == -1,"send to server");
 
             char *message = NULL;
             char *buffer = NULL;
@@ -139,6 +136,10 @@ int main(int argc, char **argv){
                     #ifdef DEBUG
                         printf("DEBUG : %d bytes sent : \"%s\"\n",n,buffer);
                     #endif
+
+                    free(message);
+                    free(buffer);
+                    
                 }
 
             }

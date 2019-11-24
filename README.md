@@ -9,9 +9,9 @@ SOLVED :
   ~~- Le fork implique des soucis dans les getpid suivants et le ctrl c est capté par le fils et le pere~~
   ~~- Ask client for nick at startup~~
   ~~- Lockfile to prevent 2 client for write at same time~~
+  ~~- Print all users after connexion~~
 
 WIP :
-  - Print all users after connexion
     
 TODO :
 
