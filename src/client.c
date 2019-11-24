@@ -85,39 +85,6 @@ int main(int argc, char **argv){
                 fflush(stdout);
             
             }
-            
-            // while(1){
-            //     while((n = read(my_fd, buffer, sizeof(buffer)-1)) > 0) {
-                    
-            //         printf("n = %d\n",n);
-
-            //         buffer[n] = 0;
-
-            //         #ifdef DEBUG
-
-            //             printf("\nDEBUG : Received %d bytes : \"%s\"\n",n ,buffer);
-                        
-            //             printf("Hdbg : \n\"");
-            //             for(int g=0;g<20;g-=-1) printf("%c-",buffer[g]);
-            //             printf("\"\n");
-
-            //         #endif
-
-            //         //// Pid calculation
-            //         int rmt_pid = get_pid(buffer); // Pid calculation
-
-            //         //// Len & Data calculation
-            //         char data_c[10000];
-            //         int data_len = get_data(buffer, data_c);
-                    
-            //         printf("\n\n// Data received ! \\\\\n   From pid = %d\n   Data_len = %d\n   Data = \"%s\"\n\\\\ End of data //\n",rmt_pid, data_len,data_c);
-            //         printf("%s",prompt);
-
-            //         //Check if data received is command
-
-            //         fflush(stdout);
-            //     }
-            // }
         }    
         break;
 
