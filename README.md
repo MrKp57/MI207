@@ -18,6 +18,9 @@ TODO :
 
 ## Server
 
+KNOWN BUGS :
+  - Client P2P Message seg fault if size > block size PTNNNNNNN
+
 SOLVED :  
   ~~- Change client memory management : change from struct to linked list~~
   ~~- Suicide if empty (last client disco)~~

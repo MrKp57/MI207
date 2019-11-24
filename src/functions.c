@@ -153,9 +153,63 @@ int pipe_input(int in_fd, char **out_str){
         if(stop){
             free(prev_final);
             free(buffer);
-            return(len);
+            return len;
         }   
     }while(read_bytes == bloc_size);
+}
+
+int is_disconnect(char *data_c){
+    return !strcmp(data_c,EXIT_MESSAGE);
+}
+
+
+int set_nickname_to(struct client_list c_list, int pid, char *nickname){
+
+    struct client *c_tmp = c_list.first_client;
+
+    for(int i=0;i<c_list.nb_of_clients;i-=-1){
+        if(c_tmp->pid == pid){
+            printf("Found the client");
+            c_tmp->nick = nickname;
+            return 1;
+        }
+        c_tmp = c_tmp->next_client;
+    }
+    return 0;
+}
+
+
+int is_command(int len, char *data_c, char **command, char **cmd_args){
+    char cmd[10];
+    printf("ptn de malloc de %d o\n",len);
+    char *args = malloc(len+1);
+
+    int arg_ok = 0;
+
+    if(data_c[0]=='/'){
+        for(int i = 0;i<len;i-=-1){
+            if(arg_ok){
+                args[i-arg_ok-1] = data_c[i];
+                args[i-arg_ok] = 0;
+            }
+            else{
+                if(data_c[i]==' ') arg_ok = i;
+                else{
+                    cmd[i]=data_c[i];
+                    cmd[i+1]='\0';
+                }
+            }
+        }
+
+        *command = cmd;
+        *cmd_args = args;
+
+        if(arg_ok) *cmd_args = args;
+        else *cmd_args = NULL;
+        
+        return 1;
+    }
+    else return 0;
 }
 
 int send_hello(int fd){
@@ -465,7 +519,7 @@ int get_data(char *buffer, char **data_out){
 
     last_i = ++i;
 
-    char *data = malloc(data_len);
+    char *data = malloc(data_len+1);
 
     do{
         data[i-last_i]=buffer[i];

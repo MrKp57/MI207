@@ -70,11 +70,19 @@ int main(int argc, char **argv){
         printf("DEBUG : fifo file opened\n");
     #endif
 
-    int rmt_pid  = 0;
-    int data_len = 0;
+    int rmt_pid    = 0;
+    int data_len   = 0;
+    int msg_len    = 0;
 
-    char *rec_msg = NULL;
-    char *data_c  = NULL;
+
+    int already_used; 
+
+
+    char *rec_msg  = NULL;
+    char *data_c   = NULL;
+    char *cmd      = NULL;
+    char *cmd_args = NULL;
+    
 
     while(1){
         //fflush(stdout);
@@ -83,29 +91,57 @@ int main(int argc, char **argv){
             printf("DEBUG : waiting for message\n");
         #endif
         
-        data_len = pipe_input(fd_srv, &rec_msg); // Blocking read function
+        msg_len = pipe_input(fd_srv, &rec_msg); // Blocking read function
 
         #ifdef DEBUG
-            printf("DEBUG : Received %d bytes : \"%s\"\n",data_len , rec_msg);
+            printf("DEBUG : Received %d bytes : \"%s\"\n",msg_len , rec_msg);
         #endif
 
         // Processing message from pipe
 
         rmt_pid = get_pid(rec_msg); // Pid calculation
 
+        #ifdef DEBUG
+            printf("DEBUG : Remote pid %d\n", rmt_pid);
+        #endif
+
         if(is_hello(rec_msg))
             add_client(&c_list,rmt_pid); // HELLO RECEIVED
 
         else { // if is data
+            #ifdef DEBUG
+                printf("DEBUG \n");
+            #endif
             data_len = get_data(rec_msg, &data_c); // Data parsing
             
             printf("// Data received ! \\\\\n   From pid = %d\n   Data_len = %d\n   Data = \"%s\"\n\\\\ End of data //\n",rmt_pid, data_len,data_c);
             
-            if(!strcmp(data_c,EXIT_MESSAGE)){ // Disconect message
+            if(is_disconnect(data_c)){ // Disconect message
                 printf("Client %d disconnected!\n",rmt_pid);
                 rm_client(&c_list, rmt_pid);
             }
+            else if(is_command(data_len, data_c, &cmd, &cmd_args)){
+                
+                
 
+                if(!strcmp(cmd,"/who")){
+                    printf("received /who\n");
+
+
+                }
+                else if(!strcmp(cmd,"/nick")){
+                    if(!set_nickname_to(c_list, rmt_pid, cmd_args)){
+                        char buf[100];
+                        char msg[100] = "This nickname is already in use, please choose another (check with /who)";
+                        sprintf(buf,"%d,%d,%s",0,strlen(msg),msg);
+                        send_to_pid(c_list,rmt_pid, buf);
+                    }
+                }
+                else if(!strcmp(cmd,"/msg")){
+                    printf("received /msg with args \"%s\"\n", cmd_args);
+                }
+                else send_to_pid(c_list, rmt_pid, "Command not found");
+            }
             else {
                 printf("sending to all expt %d\n",rmt_pid);
                 send_to_all_exept(c_list, rec_msg, rmt_pid);

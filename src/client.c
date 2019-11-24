@@ -94,9 +94,12 @@ int main(int argc, char **argv){
             char buffer_nickname[MAX_NICK_SIZE];
             int nick_size = choose_nick(buffer_nickname);
 
+            char buffer_sd_n[100];
+            int n = snprintf(buffer_sd_n, sizeof(buffer_sd_n),"%d,%d,/nick %s", getpid(), nick_size+6, buffer_nickname);
+            int rtn_val = send_to_server(srv_fd,buffer_sd_n,n);
+
             char *message = NULL;
             char *buffer = NULL;
-            int n;
 
             int len;
 

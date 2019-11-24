@@ -69,10 +69,16 @@ int send_to_server(int fd, char* message, int n);
 void lockfile_protect();
 int pipe_input(int in_fd, char **out_str);
 
+int set_nickname_to(struct client_list c_list, int rmt_pid, char *cmd_args);
+
 void create_folder(char *path);
 int get_pid(char *buffer);
 int is_hello(char *buffer);
 int get_data(char *buffer, char **data);
+
+int is_command(int len, char *data_c, char **command, char **cmd_args);
+
+int is_disconnect(char *data_c);
 
 #endif
 
