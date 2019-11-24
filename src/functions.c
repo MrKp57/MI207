@@ -170,7 +170,7 @@ void send_disconnect(){
             printf("DEBUG : On exit, my pid %d ppid %d\n",getpid(),getppid());
         #endif
         sprintf(path_pid_pipe,"%s/%d",PIPE_PATH,getppid());
-        if(remove(path_pid_pipe) == -1) printf("remove error\n");
+        if(remove(path_pid_pipe) == -1) exit_if(1,"remove error\n");
         fflush(stdout);
         exit(EXIT_FAILURE);
     }
@@ -215,24 +215,15 @@ void exit_if(int condition, const char *prefix){
         
         exit_if(prev_c_tmp == NULL, "malloc failed");
 
-        printf("I go there 0\n");
-
         int i=0;
 
         do{
             if(c_tmp->pid == c_pid){
                 exit_if(close(c_tmp->fd) == -1,"close fd"); // On ferme le fd
-
-                printf("I go there 1 %d\n",i);
             
-                if(!i) {
-                    c_list->first_client = c_tmp->next_client; // si c'est le premier client
-                    printf("I go there 2\n");
-                }
-                else {
-                    prev_c_tmp->next_client = c_tmp->next_client; // Le client suivant du client précédent n'est plus nous ;(
-                    printf("I go there 3\n");
-                }
+                if(!i) c_list->first_client = c_tmp->next_client; // si c'est le premier client
+
+                else prev_c_tmp->next_client = c_tmp->next_client; // Le client suivant du client précédent n'est plus nous ;(
 
                 free(c_tmp); // On libère la ram allouée au client
                 
@@ -254,16 +245,19 @@ void exit_if(int condition, const char *prefix){
 void print_c_list(struct client_list c_list){
 
     printf("%d clients connected !\n",c_list.nb_of_clients);
-    printf("First one at %p\n",c_list.first_client);
+    
+    if(!c_list.nb_of_clients) return;
+    
+    printf("First one at : %p\n",c_list.first_client);
     
     struct client *c_tmp = c_list.first_client;
     
     int i = 0;
-    do{
-        printf("Client - %d\n  fd - %d\n  pid - %d\n  nick - \"%s\"\n  next - \"%p\"\n",i,c_tmp->fd,c_tmp->pid,c_tmp->nick,c_tmp->next_client);
-        if(c_tmp->next_client != NULL) c_tmp = c_tmp->next_client;
-        i++;
-    }while(c_tmp->next_client != NULL);
+    while(1){
+        printf("Client - %d\n  fd - %d\n  pid - %d\n  nick - \"%s\"\n  next - \"%p\"\n",++i,c_tmp->fd,c_tmp->pid,c_tmp->nick,c_tmp->next_client);
+        if(c_tmp->next_client == NULL) return;
+        c_tmp = c_tmp->next_client;
+    }
 }
 
 void add_client(struct client_list *c_list, int c_pid){

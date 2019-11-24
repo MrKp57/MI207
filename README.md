@@ -3,17 +3,17 @@ Projet chat client serveur
 ## Client
 
 KNOWN BUGS :
-  - When ctrl-c, if father kill himself first, son cannot remove ppid pipe :/
 
 SOLVED : 
+  ~~- When ctrl-c, if father kill himself first, son cannot remove ppid pipe :/~~
   ~~- Le fork implique des soucis dans les getpid suivants et le ctrl c est capté par le fils et le pere~~
   ~~- Ask client for nick at startup~~
   ~~- Lockfile to prevent 2 client for write at same time~~
 
 WIP :
+  - Print all users after connexion
     
 TODO :
-  - Print all users after connexion
 
 
 ## Server
@@ -31,12 +31,14 @@ TODO :
 
 ## Both
 
+SOLVED :
+  ~~- Dynamic messge size~~
+
 WIP :
   - Each sys call can return -1 and need 2 be tested.
   - Add commands (i.e nickname, dest (pid or nick))
 
 TODO :
-  - Dynamic messge size
   - Add channels
 
 if (on a le temps) : TOTO :
