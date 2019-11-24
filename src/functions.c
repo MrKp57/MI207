@@ -187,6 +187,31 @@ int set_nickname_to(struct client_list c_list, int pid, char *nickname){
     return 1;
 }
 
+void list_of_clients(struct client_list c_list, char **nicknames){
+
+    char *nicks = NULL;
+    int size = 0;
+
+    struct client *c_tmp = c_list.first_client;
+    for(int i=0;i<c_list.nb_of_clients;i-=-1){
+       size += strlen(c_tmp->nick);
+       c_tmp = c_tmp->next_client;
+    }
+
+    nicks = calloc(size+1,1);
+
+    c_tmp = c_list.first_client;
+    
+    for(int i=0;i<c_list.nb_of_clients;i-=-1){
+        sprintf(nicks,"%s%s,",nicks,c_tmp->nick);
+        c_tmp = c_tmp->next_client;
+    }
+
+    *nicknames = nicks;
+
+    printf("genco - %s\n",nicks);
+}
+
 
 int is_command(int len, char *data_c, char **command, char **cmd_args){
     char cmd[10];

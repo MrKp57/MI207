@@ -125,8 +125,12 @@ int main(int argc, char **argv){
                 
 
                 if(!strcmp(cmd,"/who")){
-                    printf("received /who\n");
+                    char *nick = NULL;
+                    list_of_clients(c_list, &nick);
 
+                    char buf[100];
+                    sprintf(buf,"%d,%d,%s",0,strlen(nick),nick);
+                    send_to_pid(c_list,rmt_pid, buf);
 
                 }
                 else if(!strcmp(cmd,"/nick")){

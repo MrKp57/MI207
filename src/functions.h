@@ -70,6 +70,7 @@ void lockfile_protect();
 int pipe_input(int in_fd, char **out_str);
 
 int set_nickname_to(struct client_list c_list, int rmt_pid, char *cmd_args);
+void list_of_clients(struct client_list c_list, char **nicknames);
 
 void create_folder(char *path);
 int get_pid(char *buffer);
