@@ -59,42 +59,65 @@ int main(int argc, char **argv){
 
             int my_fd = open(path_pid_pipe, O_RDONLY);
             exit_if(my_fd == -1, path_pid_pipe); // Open fifo file in read only
-        
-            int n;
-            char buffer[100];
-            
+
+            int rmt_pid  = 0;
+            int data_len = 0;
+
+            char *rec_msg = NULL;
+            char *data_c  = NULL;
+
             while(1){
-                while((n = read(my_fd, buffer, sizeof(buffer)-1)) > 0) {
-                    
-                    printf("n = %d\n",n);
+                data_len = pipe_input(my_fd,&rec_msg);
 
-                    buffer[n] = 0;
+                #ifdef DEBUG
+                    printf("\nDEBUG : Received %d bytes : \"%s\"\n",data_len ,rec_msg);
+                #endif
 
-                    #ifdef DEBUG
+                //// Pid calculation
+                rmt_pid = get_pid(rec_msg); // Pid calculation
 
-                        printf("\nDEBUG : Received %d bytes : \"%s\"\n",n ,buffer);
-                        
-                        printf("Hdbg : \n\"");
-                        for(int g=0;g<20;g-=-1) printf("%c-",buffer[g]);
-                        printf("\"\n");
+                //// Len & Data calculation
+                data_len = get_data(rec_msg, &data_c);
+                
+                printf("\n\n// Data received ! \\\\\n   From pid = %d\n   Data_len = %d\n   Data = \"%s\"\n\\\\ End of data //\n",rmt_pid, data_len,data_c);
+                printf("%s",prompt);
 
-                    #endif
-
-                    //// Pid calculation
-                    int rmt_pid = get_pid(buffer); // Pid calculation
-
-                    //// Len & Data calculation
-                    char data_c[10000];
-                    int data_len = get_data(buffer, data_c);
-                    
-                    printf("\n\n// Data received ! \\\\\n   From pid = %d\n   Data_len = %d\n   Data = \"%s\"\n\\\\ End of data //\n",rmt_pid, data_len,data_c);
-                    printf("%s",prompt);
-
-                    //Check if data received is command
-
-                    fflush(stdout);
-                }
+                fflush(stdout);
+            
             }
+            
+            // while(1){
+            //     while((n = read(my_fd, buffer, sizeof(buffer)-1)) > 0) {
+                    
+            //         printf("n = %d\n",n);
+
+            //         buffer[n] = 0;
+
+            //         #ifdef DEBUG
+
+            //             printf("\nDEBUG : Received %d bytes : \"%s\"\n",n ,buffer);
+                        
+            //             printf("Hdbg : \n\"");
+            //             for(int g=0;g<20;g-=-1) printf("%c-",buffer[g]);
+            //             printf("\"\n");
+
+            //         #endif
+
+            //         //// Pid calculation
+            //         int rmt_pid = get_pid(buffer); // Pid calculation
+
+            //         //// Len & Data calculation
+            //         char data_c[10000];
+            //         int data_len = get_data(buffer, data_c);
+                    
+            //         printf("\n\n// Data received ! \\\\\n   From pid = %d\n   Data_len = %d\n   Data = \"%s\"\n\\\\ End of data //\n",rmt_pid, data_len,data_c);
+            //         printf("%s",prompt);
+
+            //         //Check if data received is command
+
+            //         fflush(stdout);
+            //     }
+            // }
         }    
         break;
 
@@ -116,7 +139,7 @@ int main(int argc, char **argv){
                 printf("%s",prompt);
                 fflush(stdout);
 
-                len = data_input(STDIN_FILENO, &buffer); // Blocking read function
+                len = data_input_key(&buffer); // Blocking read function
                 
                 if(len==-1) {
                     printf("Keyboard error\n");

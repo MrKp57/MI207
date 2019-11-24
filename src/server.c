@@ -76,7 +76,6 @@ int main(int argc, char **argv){
     char *rec_msg = NULL;
     char *data_c  = NULL;
 
-
     while(1){
         //fflush(stdout);
         //usleep(1000*200);
@@ -84,7 +83,7 @@ int main(int argc, char **argv){
             printf("DEBUG : waiting for message\n");
         #endif
         
-        data_len = data_input(fd_srv, &rec_msg); // Blocking read function
+        data_len = pipe_input(fd_srv, &rec_msg); // Blocking read function
 
         #ifdef DEBUG
             printf("DEBUG : Received %d bytes : \"%s\"\n",data_len , rec_msg);
@@ -109,7 +108,7 @@ int main(int argc, char **argv){
 
             else {
                 printf("sending to all expt %d\n",rmt_pid);
-                send_to_all_exept(c_list, rec_msg, rmt_pid); // par ici
+                send_to_all_exept(c_list, rec_msg, rmt_pid);
             }
         }
     }

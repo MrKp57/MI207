@@ -68,7 +68,7 @@ int choose_nick(char *buffer_nickname){
     return nick_size;
 }
 
-int data_input(int in_fd, char **out_str){
+int data_input_key(char **out_str){
     const int bloc_size = 200;
     
     char *final      = NULL;
@@ -76,16 +76,16 @@ int data_input(int in_fd, char **out_str){
     char *buffer     = calloc(bloc_size+1,1);
 
     int read_bytes = 0;
-    int prev_read_bytes = 0;
     int len = 0;
     int stop = 0;
 
     do{
-        read_bytes = read(in_fd, buffer, bloc_size);
+        read_bytes = read(STDIN_FILENO, buffer, bloc_size);
         if(read_bytes == -1) return -1;
-        printf("rb = %d \n",read_bytes);
 
+        printf("rb = %d \n",read_bytes);
         for(int y=0;y<read_bytes;y++) printf("c(%d) = '%c':%d\n",y,buffer[y],(int)buffer[y]);
+        
         len += read_bytes;
 
 
@@ -93,7 +93,6 @@ int data_input(int in_fd, char **out_str){
             *(buffer+read_bytes-1) = '\0';
             stop = 1;
         }
-        else *(buffer+read_bytes) = '\0';
         
         free(prev_final);
         prev_final = final;
@@ -115,6 +114,48 @@ int data_input(int in_fd, char **out_str){
             return(len);
         }   
     }while(read_bytes > 0);
+}
+
+int pipe_input(int in_fd, char **out_str){
+    const int bloc_size = 200;
+    
+    char *final      = NULL;
+    char *prev_final = NULL;
+    char *buffer     = calloc(bloc_size+1,1);
+
+    int read_bytes = 0;
+    int len = 0;
+    int stop = 0;
+
+    do{
+        read_bytes = read(in_fd, buffer, bloc_size);
+        if(read_bytes == -1) return -1;
+        printf("rb = %d \n",read_bytes);
+
+        for(int y=0;y<read_bytes;y++) printf("c(%d) = '%c':%d\n",y,buffer[y],(int)buffer[y]);
+
+        len += read_bytes;
+        
+        free(prev_final);
+        prev_final = final;
+        final = calloc(len+1,1);
+
+        if(final == NULL){
+            perror("calloc failed");
+            exit(EXIT_FAILURE);
+        }
+        
+        if (prev_final != NULL) strcat(final,prev_final);
+        strcat(final,buffer);
+
+        *out_str = final;
+        
+        if(stop){
+            free(prev_final);
+            free(buffer);
+            return(len);
+        }   
+    }while(read_bytes == bloc_size);
 }
 
 int send_hello(int fd){
@@ -380,11 +421,10 @@ void lockfile_protect() {
 
 int send_to_server(int fd, char* message, int n) {
     lockfile_protect();
-    *(message+n) = 10;
     
-    int rtn_val = write(fd, message, n+1);
+    int rtn_val = write(fd, message, n);
 
-    remove(LOCKFILE_PATH);
+    rtn_val += unlink(LOCKFILE_PATH);
     
     return rtn_val;
 }

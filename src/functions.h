@@ -55,6 +55,7 @@ void exit_if(int condition, const char *prefix);
 void rm_client(struct client_list *c_list, int c_pid);
 void print_c_list(struct client_list c_list);
 int data_input(int in_fd, char **out_str);
+int data_input_key(char **out_str);
 void launch_serv_if_abs();
 int choose_nick(char *buffer_nickname);
 void add_client(struct client_list *c_list, int c_pid); 
@@ -66,6 +67,7 @@ void redirect_ctrl_c();
 
 int send_to_server(int fd, char* message, int n);
 void lockfile_protect();
+int pipe_input(int in_fd, char **out_str);
 
 void create_folder(char *path);
 int get_pid(char *buffer);
