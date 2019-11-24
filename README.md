@@ -60,8 +60,8 @@ if (on a le temps) : TOTO :
 ## server
 ### the output of server is for information purpose only
 
-- server can be launched with "dem" argument : 'bin/release/server dem', log file at "/tmp/chat.log/srv_dem.log"
-  - log file name can be provided as optional argument : log file on folder "/tmp/chat.log/"
+- server can be launched as a daemon with "dem" argument : 'bin/release/server dem', log file at "/tmp/chat.log/srv_dem.log"
+  - log file name can be provided as optional argument : located on folder "/tmp/chat.log/"
   
 ## client
 - no args 
@@ -69,7 +69,7 @@ if (on a le temps) : TOTO :
   - Command list :
     - /who : "List of connected users : nickname and pid"
     - /nick $nickname : "Change my nickname"
-    - /msg $pid $message : "To send message to specific pid"
+    - /msg $pid $message : "To send message to specific client pid"
     
 ## both 
 - if client is started with no server running, one server is started in background as daemon.
