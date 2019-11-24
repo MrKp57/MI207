@@ -164,24 +164,32 @@ int is_disconnect(char *data_c){
 
 
 int set_nickname_to(struct client_list c_list, int pid, char *nickname){
+    // ret 1 on err
 
     struct client *c_tmp = c_list.first_client;
 
     for(int i=0;i<c_list.nb_of_clients;i-=-1){
-        if(c_tmp->pid == pid){
-            printf("Found the client");
-            c_tmp->nick = nickname;
+        if(strcmp(c_tmp->nick,nickname) == 0){
             return 1;
         }
         c_tmp = c_tmp->next_client;
     }
-    return 0;
+
+    c_tmp = c_list.first_client;
+
+    for(int i=0;i<c_list.nb_of_clients;i-=-1){
+        if(c_tmp->pid == pid){
+            c_tmp->nick = nickname;
+            return 0;
+        }
+        c_tmp = c_tmp->next_client;
+    }
+    return 1;
 }
 
 
 int is_command(int len, char *data_c, char **command, char **cmd_args){
     char cmd[10];
-    printf("ptn de malloc de %d o\n",len);
     char *args = malloc(len+1);
 
     int arg_ok = 0;
@@ -364,7 +372,7 @@ void add_client(struct client_list *c_list, int c_pid){
 
     int fd = open(path_pid_pipe, O_WRONLY); exit_if(fd == -1, "Client pipe open"); // Open fifo file in read only
 
-    struct client *new_c = malloc(sizeof(struct client));
+    struct client *new_c = calloc(sizeof(struct client),1);
     exit_if(new_c == NULL,"malloc failed");
 
     if(c_list->nb_of_clients == 0) new_c->next_client = NULL;

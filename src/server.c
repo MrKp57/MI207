@@ -130,7 +130,7 @@ int main(int argc, char **argv){
 
                 }
                 else if(!strcmp(cmd,"/nick")){
-                    if(!set_nickname_to(c_list, rmt_pid, cmd_args)){
+                    if(set_nickname_to(c_list, rmt_pid, cmd_args)){
                         char buf[100];
                         char msg[100] = "This nickname is already in use, please choose another (check with /who)";
                         sprintf(buf,"%d,%d,%s",0,strlen(msg),msg);
