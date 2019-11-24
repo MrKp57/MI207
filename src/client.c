@@ -29,11 +29,6 @@ int main(int argc, char **argv){
         printf("DEBUG : fifo file opened\n");    
     #endif
 
-    // char cmd[100] = {0};
-    // int n = snprintf(cmd, sizeof(cmd),"%d,%lu,%s", getpid(), strlen("/who"), "/who");
-
-    // send_to_server(srv_fd, cmd, n);
-    
     int fork_rtn;
 
     switch (fork_rtn = fork()){
@@ -93,7 +88,7 @@ int main(int argc, char **argv){
             char buffer_sd_n[100];
             int n = snprintf(buffer_sd_n, sizeof(buffer_sd_n),"%d,%d,/nick %s", getpid(), nick_size+6, buffer_nickname);
             int rtn_val = send_to_server(srv_fd,buffer_sd_n,n);
-            exit_if(rtn_val == -1,"send to server");
+            exit_if(rtn_val != 0,"send to server");
 
             char *message = NULL;
             char *buffer = NULL;
@@ -127,7 +122,7 @@ int main(int argc, char **argv){
                                 
                 if(len-1){
                     
-                    if(send_to_server(srv_fd, message, n) ==-1) {
+                    if(send_to_server(srv_fd, message, n) != 0) {
                         printf("write error\n");
                         kill(fork_rtn,SIGINT);
                         exit(EXIT_FAILURE);

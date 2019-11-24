@@ -95,7 +95,7 @@ int data_input_key(char **out_str){
             stop = 1;
         }
         
-        free(prev_final);
+        if (prev_final != NULL) //free(prev_final);
         prev_final = final;
         final = calloc(len+1,1);
 
@@ -110,8 +110,8 @@ int data_input_key(char **out_str){
         *out_str = final;
         
         if(stop){
-            free(prev_final);
-            free(buffer);
+            //free(prev_final);
+            //free(buffer);
             return(len);
         }   
     }while(read_bytes > 0);
@@ -142,7 +142,7 @@ int pipe_input(int in_fd, char **out_str){
 
         len += read_bytes;
         
-        free(prev_final);
+        if(prev_final != NULL) //free(prev_final);
         prev_final = final;
         final = calloc(len+1,1);
 
@@ -157,8 +157,8 @@ int pipe_input(int in_fd, char **out_str){
         *out_str = final;
         
         if(stop){
-            free(prev_final);
-            free(buffer);
+            //free(prev_final);
+            //free(buffer);
             return len;
         }   
     }while(read_bytes == bloc_size);
@@ -201,17 +201,17 @@ void list_of_clients(struct client_list c_list, char **nicknames){
 
     struct client *c_tmp = c_list.first_client;
     for(int i=0;i<c_list.nb_of_clients;i-=-1){
-       size += strlen(c_tmp->nick);
+       size += strlen(c_tmp->nick) + 10;
        c_tmp = c_tmp->next_client;
     }
 
-    nicks = calloc(size+1,1);
+    nicks = calloc(size,1);
     last_nicks = nicks;
 
     c_tmp = c_list.first_client;
     
     for(int i=0;i<c_list.nb_of_clients;i-=-1){
-        sprintf(nicks,"%s%s - ",last_nicks,c_tmp->nick);
+        sprintf(nicks,"%s%s:%d - ",last_nicks,c_tmp->nick, c_tmp->pid);
         last_nicks = nicks;
         c_tmp = c_tmp->next_client;
     }
@@ -246,8 +246,8 @@ int is_command(int len, char *data_c, char **command, char **cmd_args){
         *command = cmd;
         *cmd_args = args;
 
-        free(cmd);
-        free(args);
+        ////free(cmd);
+        ////free(args);
 
         if(arg_ok) *cmd_args = args;
         else *cmd_args = NULL;
@@ -310,7 +310,7 @@ void send_disconnect(){
             printf("DEBUG : On exit, my pid %d ppid %d\n",getpid(),getppid());
         #endif
         sprintf(path_pid_pipe,"%s/%d",PIPE_PATH,getppid());
-        if(remove(path_pid_pipe) == -1) exit_if(1,"remove error\n");
+        if(remove(path_pid_pipe) == -1) printf("remove error\n");
         fflush(stdout);
         exit(EXIT_FAILURE);
     }
@@ -365,7 +365,7 @@ void exit_if(int condition, const char *prefix){
 
                 else prev_c_tmp->next_client = c_tmp->next_client; // Le client suivant du client précédent n'est plus nous ;(
 
-                free(c_tmp); // On libère la ram allouée au client
+                //free(c_tmp); // On libère la ram allouée au client
                 
                 c_list->nb_of_clients+=-1;
 
@@ -443,7 +443,9 @@ int get_fd(struct client_list c_list, int pid){
 
 void send_to_pid(struct client_list c_list, int pid, char *buffer){
     int n = strlen(buffer);
-    exit_if(write(get_fd(c_list, pid), buffer, n) == -1,"write error");
+    int fd = get_fd(c_list, pid);
+    printf("fd %d\n",fd);
+    exit_if(write(fd, buffer, n) == -1,"write error");
     #ifdef DEBUG
         printf("DEBUG : \"%s\" sent to %d, n = %d\n", buffer, pid, n);
     #endif
@@ -514,18 +516,19 @@ void lockfile_protect() {
             printf("DEBUG : WAITING FOR 0.LOCK FREE ... SCHED YIELD\n");
         #endif
     }
-    exit_if(open(LOCKFILE_PATH, O_CREAT)==-1,"Lockfile creation"); // Create lockfile 
-
+    if(open(LOCKFILE_PATH, O_CREAT)==-1){
+        printf("Lockfile creation error\n");
+        exit(EXIT_FAILURE);
+    } // Create lockfile 
 }
 
 int send_to_server(int fd, char* message, int n) {
-    lockfile_protect();
-    
-    int rtn_val = write(fd, message, n);
 
+    lockfile_protect();
+    int rtn_val = write(fd, message, n);
     rtn_val += unlink(LOCKFILE_PATH);
     
-    return rtn_val;
+    return 0;
 }
 
 int get_pid(char *buffer){

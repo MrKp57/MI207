@@ -16,7 +16,7 @@ int main(int argc, char **argv){
             memcpy(path, log_fname, i);
 
             create_folder(path);
-            free(path);
+            //free(path);
             
             int fork_session;
 
@@ -71,14 +71,16 @@ int main(int argc, char **argv){
         printf("DEBUG : fifo file opened\n");
     #endif
 
-    int rmt_pid    = 0;
-    int data_len   = 0;
-    int msg_len    = 0;
-
-    char *rec_msg  = NULL;
-    char *data_c   = NULL;
-    char *cmd      = NULL;
-    char *cmd_args = NULL;
+    int rmt_pid     = 0;
+    int data_len    = 0;
+    int msg_len     = 0;
+    int pid_to_send = 0;
+    
+    char *to_send   = NULL;
+    char *rec_msg   = NULL;
+    char *data_c    = NULL;
+    char *cmd       = NULL;
+    char *cmd_args  = NULL;
     
     while(1){
         #ifdef DEBUG
@@ -136,19 +138,38 @@ int main(int argc, char **argv){
                     }
                 }
                 else if(!strcmp(cmd,"/msg")){
-                    printf("received /msg with args \"%s\"\n", cmd_args);
+
+                    char pid_to_send_c[10];
+                    to_send = malloc(strlen(cmd_args));
+
+                    int o;
+
+                    for(o=0;cmd_args[o-1]!=' ';o-=-1){
+                        memcpy(pid_to_send_c,cmd_args,o);
+                    }
+
+                    for(int t=o;t<strlen(cmd_args);t-=-1){
+                        *(to_send+t-o) = cmd_args[t];
+                        *(to_send+t-o+1) = '\0';
+                    }
+
+                    char buf[1000];
+                    sprintf(buf,"%d,%lu,%s",rmt_pid,strlen(to_send),to_send);
+                    send_to_pid(c_list,atoi(pid_to_send_c), buf);
+
                 }
                 else send_to_pid(c_list, rmt_pid, "Command not found");
+
+                //free(cmd);
+                //free(cmd_args);
             }
             else {
                 printf("sending to all expt %d\n",rmt_pid);
                 send_to_all_exept(c_list, rec_msg, rmt_pid);
             }
         }
-        free(rec_msg);
-        free(data_c);
-        free(cmd);
-        free(cmd_args);
+        //free(rec_msg);
+        ////free(data_c);
     }
     return 0;
 }
