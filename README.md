@@ -45,11 +45,33 @@ TODO :
   - Add channels
 
 if (on a le temps) : TOTO :
-  - TCP/IP implement
+  - TCP/IP implement    
+    
+    
+# How to use
 
+- make release to compile sources in release mode, binary files on bin/release/client and bin/release/server
+- make debug to compile sources in debug mode, binary files on bin/debug/client and bin/debug/server
+- make force to force rebuild from sources for both debug and release.
+- make clean to clear bin and obj files.
 
-# Command protocol
-  - Identifier : '/'
+- ./kill_server.sh used to kill daemon server running and cleaning log files and pipe folders.
+
+## server
+### the output of server is for information purpose only
+
+- server can be launched with "dem" argument : 'bin/release/server dem', log file at "/tmp/chat.log/srv_dem.log"
+  - log file name can be provided as optional argument : log file on folder "/tmp/chat.log/"
+  
+## client
+- no args 
+### Command protocol
   - Command list :
-    - /who "List of connected users"
-    - /nick "Change my nickname to another free"
+    - /who : "List of connected users : nickname and pid"
+    - /nick $nickname : "Change my nickname"
+    - /msg $pid $message : "To send message to specific pid"
+    
+## both 
+- if client is started with no server running, one server is started in background as daemon.
+- server stop when the last client leave.
+- dynamic message size, dynamic client list
